@@ -1,5 +1,7 @@
 # clauth - OAuth 2 based simple authentication system for Clojure Ring
 
+[![Build Status](https://secure.travis-ci.org/[pelle]/[clauth].png)](http://travis-ci.org/[pelle]/[clauth])
+
 This is a simple OAuth 2 provider that is designed to be a primary authentication provider for a Clojure Ring app.
 
 It is under development by a Clojure novice. Please help give feedback on use of idiomatic clojure.
