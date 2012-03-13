@@ -19,7 +19,7 @@
       (let [auth ((:headers req {}) "authorization")
             token (or (last
                     (re-find #"^Bearer (.*)$" (str auth)))
-                    ((:params req {}) :access_token)
+                    ((:params req {}) "access_token")
                     (((:cookies req {}) "access_token" {}) :value )
                   )]
         (if-let [subject (find-token token)]

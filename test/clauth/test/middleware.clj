@@ -26,12 +26,12 @@
      (is (= "secrettoken" (:oauth-token
                      ((wrap-bearer-token (fn [req] req)
                                                  #{"secrettoken"})
-                        {:params {:access_token "secrettoken"}}))) "find matching token")
+                        {:params {"access_token" "secrettoken"}}))) "find matching token")
 
      (is (nil? (:oauth-token
                      ((wrap-bearer-token (fn [req] req)
                                                  #{"secrettoken"})
-                        { :params {:access_token "wrongtoken"}}))) "should only return matching token")
+                        { :params {"access_token" "wrongtoken"}}))) "should only return matching token")
 
       (is (nil? (:oauth-token
                      ((wrap-bearer-token (fn [req] req)
