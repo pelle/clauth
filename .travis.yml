@@ -1,5 +1,2 @@
 ---
-script: bin/lein deps; bin/lein test
-branches:
-  only:
-    - master
+language: clojure
