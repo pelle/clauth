@@ -9,9 +9,11 @@
   
   [app find-token]
     (fn [req]
-      (let [auth ((:headers req) "authorization")
-            token (last
-                  (re-find #"^Bearer (.*)$" (str auth)))]
+      (let [auth ((:headers req {}) "authorization")
+            token (or (last
+                    (re-find #"^Bearer (.*)$" (str auth)))
+                    ((:params req {}) :access_token)
+                  )]
         (if-let [subject (find-token token)]
           (app (assoc req :oauth-token subject))
           (app req)))))
