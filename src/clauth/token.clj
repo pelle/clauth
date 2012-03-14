@@ -9,7 +9,7 @@
 
 (defn generate-token 
   "generate a unique token"
-  [] (.encodeAsString (new Base32) (crypto.random/bytes 20)))
+  [] (.encodeAsString (Base32.) (crypto.random/bytes 20)))
 
 (defn create-token 
   "create a unique token and store it in the token store"

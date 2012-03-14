@@ -15,3 +15,10 @@
       (swap! clients assoc client-id record)
       record)))
   
+(defn authenticate-client
+  "authenticate client application using client_id and client_secret"
+  [client-id client-secret]
+  (if-let [ client (@clients client-id)]
+    (if (= client-secret (client :client-secret))
+      client
+    )))

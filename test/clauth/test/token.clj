@@ -3,6 +3,7 @@
   (:use [clojure.test]))
 
    (deftest token-creation
+     (swap! tokens {})
      (is (= 0 (count @tokens)) "starts out empty")
      (let 
         [record (create-token { :client-id "my-client" })]
