@@ -27,6 +27,7 @@
 
             (is (= (handler { 
                     :params {
+                        :grant_type "client_credentials"
                         :client_id (client :client-id)
                         :client_secret (client :client-secret)}})
                 { :status 200
@@ -35,14 +36,30 @@
 
             (is (= (handler { 
                     :params {
+                        :grant_type "client_credentials"
                         :client_id  "bad"
                         :client_secret "client"}})
                 { :status 400
                   :headers {"Content-Type" "application/json"}
                   :body "{\"error\":\"invalid_client\"}"}) "should fail on bad client authentication") 
 
-            (is (= (handler { :params {}})
+            (is (= (handler { :params { :grant_type "client_credentials"}})
                 { :status 400
                   :headers {"Content-Type" "application/json"}
                   :body "{\"error\":\"invalid_client\"}"}) "should fail with missing client authentication") ))
 
+    (deftest requesting-unsupported-grant
+        (swap! clauth.token/tokens {})
+        (swap! clauth.client/clients {})
+        (let [ handler (token-handler clauth.client/authenticate-client)
+               client (clauth.client/register-client { :name "Super company inc" })]
+
+            (is (= (handler { :params { :grant_type "telepathy"}})
+                { :status 400
+                  :headers {"Content-Type" "application/json"}
+                  :body "{\"error\":\"unsupported_grant_type\"}"}) "should fail with unsupported grant type") 
+
+            (is (= (handler { :params { }})
+                { :status 400
+                  :headers {"Content-Type" "application/json"}
+                  :body "{\"error\":\"unsupported_grant_type\"}"}) "should fail with missing grant type") ))
