@@ -8,12 +8,12 @@
      (is (= "secrettoken" (:oauth-token
                      ((wrap-bearer-token (fn [req] req)
                                                  #{"secrettoken"})
-                        {:headers {"authorization" "Bearer secrettoken"}}))) "find matching token")
+                        {:headers {"Authorization" "Bearer secrettoken"}}))) "find matching token")
 
      (is (nil? (:oauth-token
                      ((wrap-bearer-token (fn [req] req)
                                                  #{"secrettoken"})
-                        {:headers {"authorization" "Bearer wrongtoken"}}))) "should only return matching token")
+                        {:headers {"Authorization" "Bearer wrongtoken"}}))) "should only return matching token")
 
       (is (nil? (:oauth-token
                      ((wrap-bearer-token (fn [req] req)
@@ -63,12 +63,12 @@
      (is (= 200 (:status
                      ((require-bearer-token! (fn [req] {:status 200} )
                                                  #{"secrettoken"})
-                        {:headers {"authorization" "Bearer secrettoken"}}))) "find matching token")
+                        {:headers {"Authorization" "Bearer secrettoken"}}))) "find matching token")
 
      (is (= 401 (:status
                      ((require-bearer-token! (fn [req] {:status 200})
                                                  #{"secrettoken"})
-                        {:headers {"authorization" "Bearer wrongtoken"}}))) "should only return matching token")
+                        {:headers {"Authorization" "Bearer wrongtoken"}}))) "should only return matching token")
 
       (is (= 401 (:status
                      ((require-bearer-token! (fn [req] {:status 200})

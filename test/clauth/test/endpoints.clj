@@ -1,6 +1,7 @@
 (ns clauth.test.endpoints
   (:use [clauth.endpoints])
-  (:use [clojure.test]))
+  (:use [clojure.test])
+  (:import [org.apache.commons.codec.binary Base64]))
 
     (deftest token-decoration
         (is (= (decorate-token { :token "SECRET" :unimportant "forget this"})
@@ -18,6 +19,8 @@
               :headers {"Content-Type" "application/json"}
               :body "{\"error\":\"invalid_request\"}"})))
 
+    (deftest extract-basic-authenticated-credentials
+        (is (= ["user" "password"] (basic-authentication-credentials { :headers {"Authorization" "Basic dXNlcjpwYXNzd29yZA=="}}))))
 
     (deftest requesting-client-owner-token
         (swap! clauth.token/tokens {})
@@ -32,7 +35,16 @@
                         :client_secret (client :client-secret)}})
                 { :status 200
                   :headers {"Content-Type" "application/json"}
-                  :body (str "{\"access_token\":\"" ((first (vals @clauth.token/tokens)) :token) "\",\"token_type\":\"bearer\"}") }))
+                  :body (str "{\"access_token\":\"" ((first (vals @clauth.token/tokens)) :token) "\",\"token_type\":\"bearer\"}") }) "url form encoded client credentials")
+
+            (is (= (handler { 
+                    :params { :grant_type "client_credentials" }
+                    :headers {"Authorization" 
+                    (str "Basic " (.encodeAsString (Base64.) (.getBytes (str (client :client-id) ":" (client :client-secret))) ))}})
+                { :status 200
+                  :headers {"Content-Type" "application/json"}
+                  :body (str "{\"access_token\":\"" ((first (vals @clauth.token/tokens)) :token) "\",\"token_type\":\"bearer\"}") }) "basic authenticated client credentials")
+
 
             (is (= (handler { 
                     :params {

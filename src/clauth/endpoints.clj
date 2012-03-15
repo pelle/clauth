@@ -1,7 +1,8 @@
 (ns clauth.endpoints
   (:use   [clauth.token])
   (:use   [clauth.client])
-  (:use   [cheshire.core]))
+  (:use   [cheshire.core])
+  (:import [org.apache.commons.codec.binary Base64]))
 
 
 
@@ -33,6 +34,18 @@
   [client owner]
   (token-response (create-token { :client_id (client :client_id) :owner owner})))
 
+(defn basic-authentication-credentials 
+  "decode basic authentication credentials.
+
+   If it exists it returns a vector of username and password.
+
+   If not nil."
+  [req]
+  (if-let [ basic-token (last (re-find #"^Basic (.*)$" ((req :headers {}) "Authorization" ""))) ]
+    (if-let [ credentials (String. (Base64/decodeBase64 basic-token))]
+      (clojure.string/split credentials #":" )
+      )))
+
 (defn client-authenticated-request 
   "Check that request is authenticated by client either using Basic authentication or url form encoded parameters.
 
@@ -40,8 +53,10 @@
 
    If authenticate-client returns a client map it runs success function with the request and the client."
   [req authenticate-client success]
-  (let [ client_id ((req :params ) :client_id)
-         client (authenticate-client client_id ((req :params) :client_secret))]
+  (let [ basic (basic-authentication-credentials req)
+         client_id (if basic (first basic) ((req :params ) :client_id))
+         client_secret (if basic (last basic) ((req :params) :client_secret))
+         client (authenticate-client client_id client_secret)]
           (if client 
             (success req client)
             (error-response "invalid_client"))))

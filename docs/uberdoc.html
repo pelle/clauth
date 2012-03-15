@@ -3029,7 +3029,23 @@ net.brehaut.ClojureTools = (function (SH) {
   };
 })(SyntaxHighlighter);
 </script><title>clauth -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name">clauth</h1><h2 class="project-version">1.0.0-SNAPSHOT</h2><br /><p>OAuth2 based authentication library for Ring</p>
-</div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.3.0</td></tr><tr><td class="dep-name">ring/ring-core</td><td class="dotted"><hr /></td><td class="dep-version">1.0.2</td></tr></table></div><div class="dependencies"><h3>dev dependencies</h3><table><tr><td class="dep-name">ring/ring-jetty-adapter</td><td class="dotted"><hr /></td><td class="dep-version">1.0.0</td></tr><tr><td class="dep-name">lein-marginalia</td><td class="dotted"><hr /></td><td class="dep-version">0.7.0</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#clauth.demo">clauth.demo</a></li><li><a href="#clauth.middleware">clauth.middleware</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#clauth.demo" name="clauth.demo"><h1 class="project-name">clauth.demo</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+</div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.3.0</td></tr><tr><td class="dep-name">crypto-random</td><td class="dotted"><hr /></td><td class="dep-version">1.0.0</td></tr><tr><td class="dep-name">commons-codec</td><td class="dotted"><hr /></td><td class="dep-version">1.6</td></tr><tr><td class="dep-name">ring/ring-core</td><td class="dotted"><hr /></td><td class="dep-version">1.0.2</td></tr><tr><td class="dep-name">cheshire</td><td class="dotted"><hr /></td><td class="dep-version">2.1.0</td></tr></table></div><div class="dependencies"><h3>dev dependencies</h3><table><tr><td class="dep-name">ring/ring-jetty-adapter</td><td class="dotted"><hr /></td><td class="dep-version">1.0.0</td></tr><tr><td class="dep-name">lein-marginalia</td><td class="dotted"><hr /></td><td class="dep-version">0.7.0</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#clauth.client">clauth.client</a></li><li><a href="#clauth.demo">clauth.demo</a></li><li><a href="#clauth.endpoints">clauth.endpoints</a></li><li><a href="#clauth.middleware">clauth.middleware</a></li><li><a href="#clauth.token">clauth.token</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#clauth.client" name="clauth.client"><h1 class="project-name">clauth.client</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(ns clauth.client
+    (:use [clauth.token]))</pre></td></tr><tr><td class="docs"><p>In memory client store</p>
+</td><td class="codes"><pre class="brush: clojure">(def clients 
+  (atom {})) </pre></td></tr><tr><td class="docs"><p>create a unique client and store it in the client store</p>
+</td><td class="codes"><pre class="brush: clojure">(defn register-client 
+  [ attrs ]
+  (let [client-id (generate-token)
+        record (assoc attrs :client-id client-id :client-secret (generate-token))]
+    (do 
+      (swap! clients assoc client-id record)
+      record)))</pre></td></tr><tr><td class="docs"><p>authenticate client application using client<em>id and client</em>secret</p>
+</td><td class="codes"><pre class="brush: clojure">(defn authenticate-client
+  [client-id client-secret]
+  (if-let [ client (@clients client-id)]
+    (if (= client-secret (client :client-secret))
+      client)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#clauth.demo" name="clauth.demo"><h1 class="project-name">clauth.demo</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(ns clauth.demo
   (:use [clauth.middleware])
   (:use [ring.adapter.jetty])
@@ -3051,7 +3067,66 @@ net.brehaut.ClojureTools = (function (SH) {
   (run-jetty (-&gt; handler 
               (require-bearer-token! #{&quot;secret&quot;}) 
               (wrap-params) 
-              (wrap-cookies)) {:port 3000}))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#clauth.middleware" name="clauth.middleware"><h1 class="project-name">clauth.middleware</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+              (wrap-cookies)) {:port 3000}))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#clauth.endpoints" name="clauth.endpoints"><h1 class="project-name">clauth.endpoints</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(ns clauth.endpoints
+  (:use   [clauth.token])
+  (:use   [clauth.client])
+  (:use   [cheshire.core])
+  (:import [org.apache.commons.codec.binary Base64]))</pre></td></tr><tr><td class="docs"><p>Take a token map and decorate it according to specs</p>
+
+<p>  http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-5.1</p>
+</td><td class="codes"><pre class="brush: clojure">(defn decorate-token 
+  [token]
+  { :access_token (token :token) :token_type &quot;bearer&quot;})</pre></td></tr><tr><td class="docs"><p>Create a ring response for a token response</p>
+</td><td class="codes"><pre class="brush: clojure">(defn token-response 
+  [token]
+  {  :status 200
+      :headers {&quot;Content-Type&quot; &quot;application/json&quot;}
+      :body (generate-string (decorate-token token))})</pre></td></tr><tr><td class="docs"><p>Create a ring response for a oauth error</p>
+</td><td class="codes"><pre class="brush: clojure">(defn error-response 
+  [error]
+  {  :status 400
+      :headers {&quot;Content-Type&quot; &quot;application/json&quot;}
+      :body (generate-string {:error error })})</pre></td></tr><tr><td class="docs"><p>create a new token and respond with json</p>
+</td><td class="codes"><pre class="brush: clojure">(defn respond-with-new-token
+  [client owner]
+  (token-response (create-token { :client_id (client :client_id) :owner owner})))</pre></td></tr><tr><td class="docs"><p>decode basic authentication credentials.</p>
+
+<p>   If it exists it returns a vector of username and password.</p>
+
+<p>   If not nil.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn basic-authentication-credentials 
+  [req]
+  (if-let [ basic-token (last (re-find #&quot;^Basic (.*)$&quot; ((req :headers {}) &quot;Authorization&quot; &quot;&quot;))) ]
+    (if-let [ credentials (String. (Base64/decodeBase64 basic-token))]
+      (clojure.string/split credentials #&quot;:&quot; ))))</pre></td></tr><tr><td class="docs"><p>Check that request is authenticated by client either using Basic authentication or url form encoded parameters.</p>
+
+<p>   The client<em>id and client</em>secret are checked against the authenticate-client function.</p>
+
+<p>   If authenticate-client returns a client map it runs success function with the request and the client.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn client-authenticated-request 
+  [req authenticate-client success]
+  (let [ basic (basic-authentication-credentials req)
+         client_id (if basic (first basic) ((req :params ) :client_id))
+         client_secret (if basic (last basic) ((req :params) :client_secret))
+         client (authenticate-client client_id client_secret)]
+          (if client 
+            (success req client)
+            (error-response &quot;invalid_client&quot;))))</pre></td></tr><tr><td class="docs"><p>extract grant type from request</p>
+</td><td class="codes"><pre class="brush: clojure">(defn grant-type
+  [req] ((req :params) :grant_type))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defmulti token-request-handler grant-type)</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defmethod token-request-handler &quot;client_credentials&quot; [req]
+  (client-authenticated-request 
+    req 
+    authenticate-client 
+    (fn [req client] (respond-with-new-token client client))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defmethod token-request-handler :default [req]
+  (error-response &quot;unsupported_grant_type&quot;))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn token-handler
+  [authenticate-client]
+  (fn [req]
+    (token-request-handler req)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#clauth.middleware" name="clauth.middleware"><h1 class="project-name">clauth.middleware</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(ns clauth.middleware)</pre></td></tr><tr><td class="docs"><p>Wrap request with a OAuth2 bearer token as defined in http://tools.ietf.org/html/draft-ietf-oauth-v2-bearer-08.</p>
 
 <p>  A find-token function is passed the token and returns a clojure map describing the subject of the token.</p>
@@ -3069,7 +3144,7 @@ net.brehaut.ClojureTools = (function (SH) {
 </td><td class="codes"><pre class="brush: clojure">(defn wrap-bearer-token
   [app find-token]
     (fn [req]
-      (let [auth ((:headers req {}) &quot;authorization&quot;)
+      (let [auth ((:headers req {}) &quot;Authorization&quot;)
             token (or (last
                     (re-find #&quot;^Bearer (.*)$&quot; (str auth)))
                     ((:params req {}) &quot;access_token&quot;)
@@ -3105,5 +3180,19 @@ net.brehaut.ClojureTools = (function (SH) {
      (fn [req]
        (if (req :oauth-token)
            (app req)
-           (athentication-required-response req ))) find-token)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr></table><div class="footer">Generated by <a href="https://github.com/fogus/marginalia">Marginalia</a>.&nbsp;&nbsp;Syntax highlighting provided by Alex Gorbatchev's <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a></div><script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;
+           (athentication-required-response req ))) find-token)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#clauth.token" name="clauth.token"><h1 class="project-name">clauth.token</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(ns clauth.token
+    (:require [crypto.random])
+    (:import [org.apache.commons.codec.binary Base32]))</pre></td></tr><tr><td class="docs"><p>In memory token store</p>
+</td><td class="codes"><pre class="brush: clojure">(def tokens 
+  (atom {})) </pre></td></tr><tr><td class="docs"><p>generate a unique token</p>
+</td><td class="codes"><pre class="brush: clojure">(defn generate-token 
+  [] (.encodeAsString (Base32.) (crypto.random/bytes 20)))</pre></td></tr><tr><td class="docs"><p>create a unique token and store it in the token store</p>
+</td><td class="codes"><pre class="brush: clojure">(defn create-token 
+  [ attrs ]
+  (let [token (generate-token)
+        record (assoc attrs :token token)]
+    (do 
+      (swap! tokens assoc token record)
+      record)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr></table><div class="footer">Generated by <a href="https://github.com/fogus/marginalia">Marginalia</a>.&nbsp;&nbsp;Syntax highlighting provided by Alex Gorbatchev's <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a></div><script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;
        SyntaxHighlighter.all()</script></body></html>

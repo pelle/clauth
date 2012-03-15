@@ -17,7 +17,7 @@
   
   [app find-token]
     (fn [req]
-      (let [auth ((:headers req {}) "authorization")
+      (let [auth ((:headers req {}) "Authorization")
             token (or (last
                     (re-find #"^Bearer (.*)$" (str auth)))
                     ((:params req {}) "access_token")
