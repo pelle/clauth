@@ -1,4 +1,5 @@
-(ns clauth.middleware)
+(ns clauth.middleware
+  (use [clauth.token]))
 
 (defn wrap-bearer-token
   "Wrap request with a OAuth2 bearer token as defined in http://tools.ietf.org/html/draft-ietf-oauth-v2-bearer-08.
@@ -15,17 +16,19 @@
 
   The subject is added to the :oauth-token key of the request."
   
-  [app find-token]
+  ([app]
+    (wrap-bearer-token app clauth.token/find-valid-token ))
+  ([app find-token]
     (fn [req]
-      (let [auth ((:headers req {}) "Authorization")
+      (let [auth ((:headers req {}) "authorization")
             token (or (last
                     (re-find #"^Bearer (.*)$" (str auth)))
                     ((:params req {}) "access_token")
                     (((:cookies req {}) "access_token" {}) :value )
                   )]
-        (if-let [subject (find-token token)]
-          (app (assoc req :oauth-token subject))
-          (app req)))))
+        (if-let [access-token (find-token token)]
+          (app ( assoc req :access-token access-token))
+          (app req))))))
 
 (defn athentication-required-response 
   "Return HTTP 401 Response"
@@ -39,7 +42,7 @@
 (defn require-bearer-token!
   "Require request with a OAuth2 bearer token as defined in http://tools.ietf.org/html/draft-ietf-oauth-v2-bearer-08.
 
-  A find-token function is passed the token and returns a clojure map describing the subject of the token.
+  A find-token function is passed the token and returns a clojure map describing the token.
 
   It supports the following ways of setting the token.
 
@@ -49,14 +52,15 @@
   * Non standard http cookie ('access_token') for use in interactive applications
 
 
-  The subject is added to the :oauth-token key of the request.
+  The token is added to the :access-token key of the request.
 
   will return a [HTTP 401 header](http://tools.ietf.org/html/draft-ietf-oauth-v2-bearer-08#section-2.4) if no valid token is present."
 
-  
+  ([app]
+    (require-bearer-token! app clauth.token/find-valid-token ))  
   ([app find-token]
     (wrap-bearer-token 
      (fn [req]
-       (if (req :oauth-token)
+       (if (req :access-token)
            (app req)
            (athentication-required-response req ))) find-token)))

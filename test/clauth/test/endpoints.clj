@@ -20,7 +20,7 @@
               :body "{\"error\":\"invalid_request\"}"})))
 
     (deftest extract-basic-authenticated-credentials
-        (is (= ["user" "password"] (basic-authentication-credentials { :headers {"Authorization" "Basic dXNlcjpwYXNzd29yZA=="}}))))
+        (is (= ["user" "password"] (basic-authentication-credentials { :headers {"authorization" "Basic dXNlcjpwYXNzd29yZA=="}}))))
 
     (deftest requesting-client-owner-token
         (swap! clauth.token/tokens {})
@@ -30,32 +30,32 @@
 
             (is (= (handler { 
                     :params {
-                        :grant_type "client_credentials"
-                        :client_id (client :client-id)
-                        :client_secret (client :client-secret)}})
+                        "grant_type" "client_credentials"
+                        "client_id" (client :client-id)
+                        "client_secret" (client :client-secret)}})
                 { :status 200
                   :headers {"Content-Type" "application/json"}
-                  :body (str "{\"access_token\":\"" ((first (vals @clauth.token/tokens)) :token) "\",\"token_type\":\"bearer\"}") }) "url form encoded client credentials")
+                  :body (str "{\"access_token\":\"" ( :token (first (vals @clauth.token/tokens))) "\",\"token_type\":\"bearer\"}") }) "url form encoded client credentials")
 
             (is (= (handler { 
-                    :params { :grant_type "client_credentials" }
-                    :headers {"Authorization" 
+                    :params { "grant_type" "client_credentials" }
+                    :headers {"authorization" 
                     (str "Basic " (.encodeAsString (Base64.) (.getBytes (str (client :client-id) ":" (client :client-secret))) ))}})
                 { :status 200
                   :headers {"Content-Type" "application/json"}
-                  :body (str "{\"access_token\":\"" ((first (vals @clauth.token/tokens)) :token) "\",\"token_type\":\"bearer\"}") }) "basic authenticated client credentials")
+                  :body (str "{\"access_token\":\"" (:token (first (vals @clauth.token/tokens)) ) "\",\"token_type\":\"bearer\"}") }) "basic authenticated client credentials")
 
 
             (is (= (handler { 
                     :params {
-                        :grant_type "client_credentials"
-                        :client_id  "bad"
-                        :client_secret "client"}})
+                        "grant_type" "client_credentials"
+                        "client_id"  "bad"
+                        "client_secret" "client"}})
                 { :status 400
                   :headers {"Content-Type" "application/json"}
                   :body "{\"error\":\"invalid_client\"}"}) "should fail on bad client authentication") 
 
-            (is (= (handler { :params { :grant_type "client_credentials"}})
+            (is (= (handler { :params { "grant_type" "client_credentials"}})
                 { :status 400
                   :headers {"Content-Type" "application/json"}
                   :body "{\"error\":\"invalid_client\"}"}) "should fail with missing client authentication") ))
@@ -66,7 +66,7 @@
         (let [ handler (token-handler clauth.client/authenticate-client)
                client (clauth.client/register-client { :name "Super company inc" })]
 
-            (is (= (handler { :params { :grant_type "telepathy"}})
+            (is (= (handler { :params { "grant_type" "telepathy"}})
                 { :status 400
                   :headers {"Content-Type" "application/json"}
                   :body "{\"error\":\"unsupported_grant_type\"}"}) "should fail with unsupported grant type") 
