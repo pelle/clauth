@@ -52,11 +52,11 @@
   ([client subject expires scope object]
     (create-token (oauth-token client subject expires scope object)))
   ([ token ]
-    (store-token @token-store token)
+    (store-token token)
     ))
   
 (defn find-valid-token
   "return a token from the store if it is valid."
   [t]
-  (if-let [token (find-token @token-store t)]
+  (if-let [token (fetch-token t)]
     (if (is-valid? token) token )))

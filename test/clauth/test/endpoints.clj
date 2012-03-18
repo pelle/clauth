@@ -37,7 +37,7 @@
                         "client_secret" (client :client-secret)}})
                 { :status 200
                   :headers {"Content-Type" "application/json"}
-                  :body (str "{\"access_token\":\"" ( :token (first (tokens @token-store))) "\",\"token_type\":\"bearer\"}") }) "url form encoded client credentials")
+                  :body (str "{\"access_token\":\"" ( :token (first (tokens))) "\",\"token_type\":\"bearer\"}") }) "url form encoded client credentials")
 
             (is (= (handler { 
                     :params { "grant_type" "client_credentials" }
@@ -45,7 +45,7 @@
                     (str "Basic " (.encodeAsString (Base64.) (.getBytes (str (client :client-id) ":" (client :client-secret))) ))}})
                 { :status 200
                   :headers {"Content-Type" "application/json"}
-                  :body (str "{\"access_token\":\"" (:token (first (tokens @token-store)) ) "\",\"token_type\":\"bearer\"}") }) "basic authenticated client credentials")
+                  :body (str "{\"access_token\":\"" (:token (first (tokens)) ) "\",\"token_type\":\"bearer\"}") }) "basic authenticated client credentials")
 
 
             (is (= (handler { 

@@ -50,11 +50,21 @@ This is implementend by IPersistentMap so {} represents a valid token where {:ex
 
 A OAuthToken record exists which can be instantiated easily by the oauth_token function:
 
-   (oauth-token client user)
+    (oauth-token client user)
 
-Currently an in memory store is used. Use create-token to create and store the token.
+Use create-token to create and store the token:
 
-I will create a protocol to be used for this so it can be extended with sql/redis etc implementations.
+    (create-token client user)
+
+## Stores
+
+Stores are used to store tokens and will be used to store clients and users as well.
+
+There is a generalized protocol called Store and currently a simple memory implementation used for it.
+
+It should be pretty simple to implement this Store with redis, sql, datomic or what have you. I will write a reference implementation using redis next.
+
+The token-store used is set in the atom clauth.store/token-store. reset! it with your own implementation.
 
 ## Run Demo App
 
@@ -66,7 +76,6 @@ A mini server demo is available. It creates a client for you and prints out inst
 
 The goal is to implement the full [OAuth2 spec](http://tools.ietf.org/html/draft-ietf-oauth-v2-25) in this order:
 
-* Token Store protocol
 * User Store protocol
 * [Resource Owner Password Credential Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.3)
 * Client Store protocol
