@@ -1,6 +1,7 @@
 (ns clauth.endpoints
   (:use   [clauth.token])
   (:use   [clauth.client])
+  (:use   [clauth.user])
   (:use   [cheshire.core])
   (:import [org.apache.commons.codec.binary Base64]))
 
@@ -72,6 +73,14 @@
     req 
     authenticator
     (fn [req client] (respond-with-new-token client client))))
+
+(defmethod token-request-handler "password" [req authenticator]
+  (client-authenticated-request 
+    req 
+    authenticator
+    (fn [req client] (if-let [user (authenticate-user ((req :params) "username") ((req :params) "password"))]
+                        (respond-with-new-token client client)
+                        (error-response "invalid_grant")))))
 
 (defmethod token-request-handler :default [req authenticator]
   (error-response "unsupported_grant_type"))

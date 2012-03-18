@@ -35,6 +35,7 @@ The difference between wrap-bearer-token and require-bearer-token! is that wrap 
 Currently the following Grant types are supported:
 
 * [Client Credential Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.4)
+* [Resource Owner Password Credential Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.3)
 
 Grant types are implemented using multimethods. To implement one 
 
@@ -93,7 +94,6 @@ A mini server demo is available. It creates a client for you and prints out inst
 
 The goal is to implement the full [OAuth2 spec](http://tools.ietf.org/html/draft-ietf-oauth-v2-25) in this order:
 
-* [Resource Owner Password Credential Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.3)
 * Redis Store implementation
 * [Authorization Code Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.1)
 * [Implicit Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.2)
