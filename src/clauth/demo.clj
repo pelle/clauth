@@ -30,7 +30,7 @@
 
   You could instead use a hash for a simple in memory token database or a function querying a database."
   []
-  (let [client (register-client {:name "My App"})] 
+  (let [client (register-client)] 
     (println "App starting up:")
     (prn client)
     (println "Token endpoint /token")

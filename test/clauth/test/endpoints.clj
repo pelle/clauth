@@ -25,15 +25,15 @@
 
     (deftest requesting-client-owner-token
         (reset-token-store!)
-        (swap! clauth.client/clients {})
+        (clauth.client/reset-client-store!)
         (let [ handler (token-handler clauth.client/authenticate-client)
-               client (clauth.client/register-client { :name "Super company inc" })]
+               client (clauth.client/register-client)]
 
             (is (= (handler { 
                     :params {
                         "grant_type" "client_credentials"
-                        "client_id" (client :client-id)
-                        "client_secret" (client :client-secret)}})
+                        "client_id" (:client-id client )
+                        "client_secret" (:client-secret client)}})
                 { :status 200
                   :headers {"Content-Type" "application/json"}
                   :body (str "{\"access_token\":\"" ( :token (first (tokens))) "\",\"token_type\":\"bearer\"}") }) "url form encoded client credentials")
@@ -41,7 +41,7 @@
             (is (= (handler { 
                     :params { "grant_type" "client_credentials" }
                     :headers {"authorization" 
-                    (str "Basic " (.encodeAsString (Base64.) (.getBytes (str (client :client-id) ":" (client :client-secret))) ))}})
+                    (str "Basic " (.encodeAsString (Base64.) (.getBytes (str (:client-id client ) ":" (:client-secret client )))))}})
                 { :status 200
                   :headers {"Content-Type" "application/json"}
                   :body (str "{\"access_token\":\"" (:token (first (tokens)) ) "\",\"token_type\":\"bearer\"}") }) "basic authenticated client credentials")
@@ -63,9 +63,9 @@
 
     (deftest requesting-unsupported-grant
         (reset-token-store!)
-        (swap! clauth.client/clients {})
+        (clauth.client/reset-client-store!)
         (let [ handler (token-handler clauth.client/authenticate-client)
-               client (clauth.client/register-client { :name "Super company inc" })]
+               client (clauth.client/register-client)]
 
             (is (= (handler { :params { "grant_type" "telepathy"}})
                 { :status 400

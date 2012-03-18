@@ -48,13 +48,17 @@ There is a protocol defined called Expirable which implements one function:
 
 This is implementend by IPersistentMap so {} represents a valid token where {:expires (date-time 2011)} is invalid.
 
-A OAuthToken record exists which can be instantiated easily by the oauth_token function:
-
-    (oauth-token client user)
-
-Use create-token to create and store the token:
+A OAuthToken record exists which can be instantiated and stored easily by the create-token function:
 
     (create-token client user)
+
+## Client Applications
+
+A ClientApplication record exists which can be instantiated and stored easily by the register-app function:
+
+    (register-app name url)
+
+A client application has a client-id and a client-secret which is used for issuing tokens.
 
 ## Stores
 
@@ -76,9 +80,9 @@ A mini server demo is available. It creates a client for you and prints out inst
 
 The goal is to implement the full [OAuth2 spec](http://tools.ietf.org/html/draft-ietf-oauth-v2-25) in this order:
 
-* User Store protocol
+* User Store
+* Redis Store implementation
 * [Resource Owner Password Credential Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.3)
-* Client Store protocol
 * [Authorization Code Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.1)
 * [Implicit Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.2)
 * [Refresh Tokens](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-1.5)
