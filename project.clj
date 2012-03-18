@@ -8,7 +8,7 @@
                  [ring/ring-core "1.0.2"]
                  [cheshire "2.1.0"]
                  [clj-time "0.3.7"]
-                 ]
+                 [org.mindrot/jbcrypt "0.3m"]]
 
   :dev-dependencies [[ring/ring-jetty-adapter "1.0.0"]
                      [lein-marginalia "0.7.0"]]

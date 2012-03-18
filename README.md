@@ -60,6 +60,13 @@ A ClientApplication record exists which can be instantiated and stored easily by
 
 A client application has a client-id and a client-secret which is used for issuing tokens.
 
+## Users
+
+A User record exists which can be instantiated and stored easily by the register-user function:
+
+    (register-user login password name url)
+
+
 ## Stores
 
 Stores are used to store tokens and will be used to store clients and users as well.
@@ -68,7 +75,13 @@ There is a generalized protocol called Store and currently a simple memory imple
 
 It should be pretty simple to implement this Store with redis, sql, datomic or what have you. I will write a reference implementation using redis next.
 
-The token-store used is set in the atom clauth.token/token-store. reset! it with your own implementation.
+The stores used  by the various parts are defined in an atom for each type. reset! each of them with your own implementation.
+
+The following stores are currently defined:
+
+* token-store is in clauth.token/token-store
+* client-store is in clauth.client/client-store
+* user-store is in clauth.user/user-store
 
 ## Run Demo App
 
@@ -80,9 +93,8 @@ A mini server demo is available. It creates a client for you and prints out inst
 
 The goal is to implement the full [OAuth2 spec](http://tools.ietf.org/html/draft-ietf-oauth-v2-25) in this order:
 
-* User Store
-* Redis Store implementation
 * [Resource Owner Password Credential Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.3)
+* Redis Store implementation
 * [Authorization Code Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.1)
 * [Implicit Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.2)
 * [Refresh Tokens](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-1.5)
