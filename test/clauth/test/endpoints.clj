@@ -1,7 +1,6 @@
 (ns clauth.test.endpoints
   (:use [clauth.endpoints])
   (:use [clauth.token])
-  (:use [clauth.store])
   (:use [clojure.test])
   (:import [org.apache.commons.codec.binary Base64]))
 
@@ -25,7 +24,7 @@
         (is (= ["user" "password"] (basic-authentication-credentials { :headers {"authorization" "Basic dXNlcjpwYXNzd29yZA=="}}))))
 
     (deftest requesting-client-owner-token
-        (clauth.store/reset-memory-store!)
+        (reset-token-store!)
         (swap! clauth.client/clients {})
         (let [ handler (token-handler clauth.client/authenticate-client)
                client (clauth.client/register-client { :name "Super company inc" })]
@@ -63,7 +62,7 @@
                   :body "{\"error\":\"invalid_client\"}"}) "should fail with missing client authentication") ))
 
     (deftest requesting-unsupported-grant
-        (clauth.store/reset-memory-store!)
+        (reset-token-store!)
         (swap! clauth.client/clients {})
         (let [ handler (token-handler clauth.client/authenticate-client)
                client (clauth.client/register-client { :name "Super company inc" })]

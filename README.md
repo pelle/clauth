@@ -64,7 +64,7 @@ There is a generalized protocol called Store and currently a simple memory imple
 
 It should be pretty simple to implement this Store with redis, sql, datomic or what have you. I will write a reference implementation using redis next.
 
-The token-store used is set in the atom clauth.store/token-store. reset! it with your own implementation.
+The token-store used is set in the atom clauth.token/token-store. reset! it with your own implementation.
 
 ## Run Demo App
 

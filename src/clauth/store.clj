@@ -24,24 +24,3 @@
   ([data]
     (MemoryStore. (atom data))))
 
-(defonce token-store (atom (create-memory-store)))
-
-(defn reset-memory-store!
-  "mainly for used in testing. Clears out all tokens."
-  []
-  (reset-store! @token-store))
-
-(defn fetch-token
-  "Find OAuth token based on the token string"
-  [t]
-  (fetch @token-store t))
-
-(defn store-token
-  "Store the given OAuthToken and return it."
-  [t]
-  (store @token-store :token t))
-
-(defn tokens
-  "Sequence of tokens"
-  []
-  (entries @token-store))

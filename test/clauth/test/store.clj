@@ -1,5 +1,4 @@
 (ns clauth.test.store
-  (:use [clauth.token])
   (:use [clauth.store])
   (:use [clojure.test])
   )
@@ -21,13 +20,4 @@
           (is (= [] (entries st)))
           (is (nil? (fetch st "item")))))))
 
- (deftest token-store-implementation
-   (clauth.store/reset-memory-store!)
-   (is (= 0 (count (tokens))) "starts out empty")
-   (let 
-      [record (oauth-token "my-client" "my-user")]
-      (is (nil? (fetch-token (:token record))))
-      (do
-        (store-token record)
-        (is (= record (fetch-token (:token record))))
-        (is (= 1 (count (tokens))) "added one"))))
+ 

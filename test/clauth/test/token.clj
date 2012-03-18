@@ -1,6 +1,5 @@
 (ns clauth.test.token
   (:use [clauth.token])
-  (:use [clauth.store])
   (:use [clojure.test])
   (:require [clj-time.core :as time]))
 
@@ -13,7 +12,7 @@
         (is (is-valid? record) "should be valid by default")))
 
    (deftest token-creation
-     (clauth.store/reset-memory-store!)
+     (reset-token-store!)
      (is (= 0 (count (tokens))) "starts out empty")
      (let 
         [record (create-token "my-client" "my-user")]
@@ -30,3 +29,14 @@
       (is (is-valid? {:expires (time/plus (time/now) (time/days 1))}) "valid if expiry date is in the future")
       (is (not (is-valid? {:expires (time/date-time 2012 3 13)})) "expires if past expiry date")
     )
+
+   (deftest token-store-implementation
+     (reset-token-store!)
+     (is (= 0 (count (tokens))) "starts out empty")
+     (let 
+        [record (oauth-token "my-client" "my-user")]
+        (is (nil? (fetch-token (:token record))))
+        (do
+          (store-token record)
+          (is (= record (fetch-token (:token record))))
+          (is (= 1 (count (tokens))) "added one"))))
