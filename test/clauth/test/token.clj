@@ -1,5 +1,6 @@
 (ns clauth.test.token
   (:use [clauth.token])
+  (:use [clauth.store])
   (:use [clojure.test])
   (:require [clj-time.core :as time]))
 
@@ -12,7 +13,7 @@
         (is (is-valid? record) "should be valid by default")))
 
    (deftest token-creation
-     (reset-memory-store!)
+     (clauth.store/reset-memory-store!)
      (is (= 0 (count (tokens @token-store))) "starts out empty")
      (let 
         [record (create-token "my-client" "my-user")]
