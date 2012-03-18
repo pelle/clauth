@@ -1,5 +1,6 @@
 (ns clauth.test.endpoints
   (:use [clauth.endpoints])
+  (:use [clauth.token])
   (:use [clojure.test])
   (:import [org.apache.commons.codec.binary Base64]))
 
@@ -23,7 +24,7 @@
         (is (= ["user" "password"] (basic-authentication-credentials { :headers {"authorization" "Basic dXNlcjpwYXNzd29yZA=="}}))))
 
     (deftest requesting-client-owner-token
-        (swap! clauth.token/tokens {})
+        (reset-memory-store!)
         (swap! clauth.client/clients {})
         (let [ handler (token-handler clauth.client/authenticate-client)
                client (clauth.client/register-client { :name "Super company inc" })]
@@ -35,7 +36,7 @@
                         "client_secret" (client :client-secret)}})
                 { :status 200
                   :headers {"Content-Type" "application/json"}
-                  :body (str "{\"access_token\":\"" ( :token (first (vals @clauth.token/tokens))) "\",\"token_type\":\"bearer\"}") }) "url form encoded client credentials")
+                  :body (str "{\"access_token\":\"" ( :token (first (tokens @token-store))) "\",\"token_type\":\"bearer\"}") }) "url form encoded client credentials")
 
             (is (= (handler { 
                     :params { "grant_type" "client_credentials" }
@@ -43,7 +44,7 @@
                     (str "Basic " (.encodeAsString (Base64.) (.getBytes (str (client :client-id) ":" (client :client-secret))) ))}})
                 { :status 200
                   :headers {"Content-Type" "application/json"}
-                  :body (str "{\"access_token\":\"" (:token (first (vals @clauth.token/tokens)) ) "\",\"token_type\":\"bearer\"}") }) "basic authenticated client credentials")
+                  :body (str "{\"access_token\":\"" (:token (first (tokens @token-store)) ) "\",\"token_type\":\"bearer\"}") }) "basic authenticated client credentials")
 
 
             (is (= (handler { 
@@ -61,7 +62,7 @@
                   :body "{\"error\":\"invalid_client\"}"}) "should fail with missing client authentication") ))
 
     (deftest requesting-unsupported-grant
-        (swap! clauth.token/tokens {})
+        (reset-memory-store!)
         (swap! clauth.client/clients {})
         (let [ handler (token-handler clauth.client/authenticate-client)
                client (clauth.client/register-client { :name "Super company inc" })]

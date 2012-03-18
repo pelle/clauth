@@ -12,15 +12,15 @@
         (is (is-valid? record) "should be valid by default")))
 
    (deftest token-creation
-     (swap! tokens {})
-     (is (= 0 (count @tokens)) "starts out empty")
+     (reset-memory-store!)
+     (is (= 0 (count (tokens @token-store))) "starts out empty")
      (let 
         [record (create-token "my-client" "my-user")]
         (is (= "my-client" ( :client record )) "should have client")
         (is (= "my-user" ( :subject record )) "should have subject")
-        (is (not (nil? (:token record  ))) "should include token field")
-        (is (= 1 (count @tokens)) "added one")
-        (is (= record (first (vals @tokens))) "added one")
+        (is (not (nil? (:token record ))) "should include token field")
+        (is (= 1 (count (tokens @token-store))) "added one")
+        (is (= record (first (tokens @token-store))) "added one")
         (is (= record (find-valid-token (:token record))))))
 
    (deftest token-validity

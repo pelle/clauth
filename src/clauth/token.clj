@@ -2,12 +2,6 @@
     (:require [crypto.random])
     (:require [clj-time.core :as time]))
 
-
-(def tokens 
-  "In memory token store"
-  (atom {})) 
-
-
 (defprotocol Expirable
   "Check if object is valid"
   (is-valid? [ t ] "is the object still valid"))
@@ -19,6 +13,36 @@
 
 (extend-protocol Expirable nil 
   (is-valid? [t] false))
+
+
+(defprotocol OAuthTokenStore
+  ; "Store OAuthTokens"
+  (find-token [ e t ] "Find the token based on a token string.")
+  (store-token [ e token ] "Store the given OAuthToken and return it.")
+  (tokens [e] "sequence of tokens"))
+
+(defrecord MemoryTokenStore [tokens] 
+  OAuthTokenStore 
+  (find-token [this t] (@tokens t))
+  (store-token [this token]
+    (do
+      (swap! tokens assoc (:token token) token)
+      token)
+    )
+  (tokens [this] (vals @tokens)))
+
+(defn create-memory-token-store 
+  "Create a memory token store"
+  ([] (create-memory-token-store {}))
+  ([data]
+    (MemoryTokenStore. (atom data))))
+
+(defonce token-store (atom (create-memory-token-store)))
+
+(defn reset-memory-store!
+  "mainly for used in testing. Clears out all tokens."
+  []
+  (reset! token-store (create-memory-token-store)))
 
 (defrecord OAuthToken
   [token client subject expires scope object])
@@ -57,12 +81,11 @@
   ([client subject expires scope object]
     (create-token (oauth-token client subject expires scope object)))
   ([ token ]
-    (do 
-      (swap! tokens assoc (:token token) token)
-      token)))
+    (store-token @token-store token)
+    ))
   
 (defn find-valid-token
   "return a token from the store if it is valid."
-  [token]
-  (if-let [t (@tokens token)]
-    (if (is-valid? t) t )))
+  [t]
+  (if-let [token (find-token @token-store t)]
+    (if (is-valid? token) token )))

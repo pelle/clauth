@@ -19,12 +19,9 @@
           )})
 
 (defn routes [req]
-  (do
-    (prn req)
-    (prn @clients)
   (if (= "/token" (req :uri))
     ((token-handler) req )
-    ((require-bearer-token! handler) req))))
+    ((require-bearer-token! handler) req)))
 
 (defn -main 
   "start web server. This first wraps the request in the cookies and params middleware, then requires a bearer token.
