@@ -34,6 +34,9 @@
   * scope   - An optional vector of scopes authorized
   * object  - An optional object authorized. Eg. account, photo"
 
+  ([attrs]
+    (OAuthToken. (attrs "token") (attrs "client") (attrs "subject") (attrs "expires") (attrs "scope") (attrs "object"))
+  )
   ([client subject]
     (oauth-token client subject nil nil nil)
     )

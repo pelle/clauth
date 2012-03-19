@@ -11,5 +11,6 @@
                  [org.mindrot/jbcrypt "0.3m"]]
 
   :dev-dependencies [[ring/ring-jetty-adapter "1.0.0"]
-                     [lein-marginalia "0.7.0"]]
+                     [lein-marginalia "0.7.0"]
+                     [org.clojars.tavisrudd/redis-clojure "1.3.1"]]
   :main clauth.demo)
