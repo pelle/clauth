@@ -12,9 +12,8 @@
 (defn all-in-namespace
   "get all items in namespace"
   [namespace]
-  (let [ks (remove nil? (namespaced-keys namespace))
-        gt `(redis.core/mget ~@ks)]
-    (if (not-empty ks) (eval gt)))) ; This seems wrong to me. Is this the best way of doing it?
+  (let [ks (remove nil? (namespaced-keys namespace))]
+    (if (not-empty ks) (apply redis/mget ks)))) 
     
 
 (defrecord RedisStore [namespace] 
@@ -24,7 +23,7 @@
                             
   (store [this key_param item]
     (do
-      (redis/set (str namespace "/" (item key_param)) (cheshire.core/generate-string item))
+      (redis/set (str namespace "/" (key_param item)) (cheshire.core/generate-string item))
       item)
     )
   (entries [this] (map #( cheshire.core/parse-string % true) (all-in-namespace namespace) ))

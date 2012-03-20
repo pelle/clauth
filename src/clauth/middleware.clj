@@ -1,5 +1,5 @@
 (ns clauth.middleware
-  (use [clauth.token]))
+  (:use [clauth.token]))
 
 (defn wrap-bearer-token
   "Wrap request with a OAuth2 bearer token as defined in http://tools.ietf.org/html/draft-ietf-oauth-v2-bearer-08.

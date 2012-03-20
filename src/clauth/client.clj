@@ -10,6 +10,12 @@
 
 (defn client-app
   "Create new client-application record"
+  ([attrs] ; Swiss army constructor. There must be a better way.
+    (cond
+      (nil? attrs) nil
+      (instance? ClientApplication attrs) attrs
+      (instance? java.lang.String attrs) (client-app (cheshire.core/parse-string attrs true))
+      :default (ClientApplication. (attrs :client-id) (attrs :client-secret) (attrs :name) (attrs :url))))
   ([] (client-app nil nil))
   ([name url] (ClientApplication. (generate-token) (generate-token) name url)))
   
@@ -21,7 +27,7 @@
 (defn fetch-client
   "Find OAuth token based on the token string"
   [t]
-  (fetch @client-store t))
+  (client-app (fetch @client-store t)))
 
 (defn store-client
   "Store the given ClientApplication and return it."

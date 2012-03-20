@@ -1,7 +1,8 @@
 (ns clauth.token
     (:use [clauth.store])
     (:require [crypto.random])
-    (:require [clj-time.core :as time]))
+    (:require [clj-time.core :as time])    
+    (:require [cheshire.core]))
 
 (defprotocol Expirable
   "Check if object is valid"
@@ -34,9 +35,12 @@
   * scope   - An optional vector of scopes authorized
   * object  - An optional object authorized. Eg. account, photo"
 
-  ([attrs]
-    (OAuthToken. (attrs "token") (attrs "client") (attrs "subject") (attrs "expires") (attrs "scope") (attrs "object"))
-  )
+  ([attrs] ; Swiss army constructor. There must be a better way.
+    (cond
+      (nil? attrs) nil
+      (instance? OAuthToken attrs) attrs
+      (instance? java.lang.String attrs) (oauth-token (cheshire.core/parse-string attrs true))
+      :default (OAuthToken. (attrs :token) (attrs :client) (attrs :subject) (attrs :expires) (attrs :scope) (attrs :object))))
   ([client subject]
     (oauth-token client subject nil nil nil)
     )
@@ -58,7 +62,7 @@
 (defn fetch-token
   "Find OAuth token based on the token string"
   [t]
-  (fetch @token-store t))
+  (oauth-token (fetch @token-store t)))
 
 (defn store-token
   "Store the given OAuthToken and return it."
@@ -68,7 +72,7 @@
 (defn tokens
   "Sequence of tokens"
   []
-  (entries @token-store))
+  (map oauth-token (entries @token-store)))
 
 (defn create-token 
   "create a unique token and store it in the token store"

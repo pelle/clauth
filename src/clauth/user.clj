@@ -20,6 +20,13 @@
 
 (defn new-user
   "Create new user record"
+  ([attrs] ; Swiss army constructor. There must be a better way.
+    (cond
+      (nil? attrs) nil
+      (instance? User attrs) attrs
+      (instance? java.lang.String attrs) (new-user (cheshire.core/parse-string attrs true))
+      :default (User. (attrs :login) (attrs :password) (attrs :name) (attrs :url))))
+
   ([ login password ] (new-user login password nil nil))
   ([ login password name url ] (User. login (bcrypt password) name url)))
   
@@ -31,7 +38,7 @@
 (defn fetch-user
   "Find user based on login"
   [t]
-  (fetch @user-store t))
+  (new-user (fetch @user-store t)))
 
 (defn store-user
   "Store the given User and return it."

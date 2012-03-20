@@ -74,15 +74,35 @@ Stores are used to store tokens and will be used to store clients and users as w
 
 There is a generalized protocol called Store and currently a simple memory implementation used for it.
 
-It should be pretty simple to implement this Store with redis, sql, datomic or what have you. I will write a reference implementation using redis next.
+It should be pretty simple to implement this Store with redis, sql, datomic or what have you. 
 
-The stores used  by the various parts are defined in an atom for each type. reset! each of them with your own implementation.
+It includes a simple Redis implementation.
+
+The stores used by the various parts are defined in an atom for each type. reset! each of them with your own implementation.
 
 The following stores are currently defined:
 
 * token-store is in clauth.token/token-store
 * client-store is in clauth.client/client-store
 * user-store is in clauth.user/user-store
+
+To use the redis store add the following to your code:
+
+    (reset! token-store (create-redis-store "tokens"))
+    (reset! client-store (create-redis-store "clients"))
+    (reset! user-store (create-redis-store "users"))
+
+And wrap your handler with a redis connection middleware similar to this: 
+
+    (defn wrap-redis-store [app]
+      (fn [req]
+        (redis/with-server
+         {:host "127.0.0.1"
+          :port 6379
+          :db 14
+         }
+         (app req))))
+
 
 ## Run Demo App
 
@@ -94,7 +114,6 @@ A mini server demo is available. It creates a client for you and prints out inst
 
 The goal is to implement the full [OAuth2 spec](http://tools.ietf.org/html/draft-ietf-oauth-v2-25) in this order:
 
-* Redis Store implementation
 * [Authorization Code Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.1)
 * [Implicit Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.2)
 * [Refresh Tokens](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-1.5)
