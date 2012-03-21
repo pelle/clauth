@@ -1,4 +1,5 @@
 (ns clauth.views
+  (:use ring.util.response)
   (:use hiccup.core))
 
 (defn login-form 
@@ -22,3 +23,9 @@
     :status 200
     :headers {"Content-Type" "text/html"}
     :body (login-form req)})
+
+(defn hello-world
+  [req]
+  (let [user (:subject (req :access-token))]
+    (response (html
+              [:h1 "Hello " (:login user)]))))

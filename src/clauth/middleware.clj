@@ -1,5 +1,6 @@
 (ns clauth.middleware
-  (:use [clauth.token]))
+  (:use [clauth.token])
+  (:use [ring.util.response :only [redirect]]))
 
 (defn wrap-bearer-token
   "Wrap request with a OAuth2 bearer token as defined in http://tools.ietf.org/html/draft-ietf-oauth-v2-bearer-08.
@@ -31,14 +32,28 @@
           (app ( assoc req :access-token access-token))
           (app req))))))
 
+(defn is-html?
+  "returns true if request has text/html in the accept header"
+  [req]
+  (if-let [accept ((req :headers {}) "accept")]
+    (re-find #"(text/html|application/xhtml\+xml)" accept)))
+  
+(defmacro if-html
+  "if request is for a html page it runs the first handler if not the second"
+  [req html api]
+  `(if (is-html? ~req) ~html ~api))
+
 (defn athentication-required-response 
   "Return HTTP 401 Response"
   [ req ]
-  { :status  401
+  (if-html req 
+    (redirect "/login")
+    { :status  401
     :headers {
       "Content-Type" "text/plain"
       "WWW-Authenticate" "Bearer realm=\"OAuth required\""}
-    :body "access denied" })
+    :body "access denied" }))
+
 
 (defn require-bearer-token!
   "Require request with a OAuth2 bearer token as defined in http://tools.ietf.org/html/draft-ietf-oauth-v2-bearer-08.

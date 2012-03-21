@@ -14,12 +14,14 @@
 (defn handler 
   "dummy ring handler. Returns json with the token if present."
   [request]
-  {:status 200
-   :headers {"Content-Type" "application/json"}
-   :body (if-let [token (request :access-token)]
-                (str "{\"token\":\"" (str token) "\"}")
-                "{}"
-          )})
+  (if-html request
+    (clauth.views/hello-world request)
+    {:status 200
+     :headers {"Content-Type" "application/json"}
+     :body (if-let [token (request :access-token)]
+                  (str "{\"token\":\"" (str (:token token)) "\"}")
+                  "{}"
+          )}))
 
 (defn routes [master-client]
   (fn [req]

@@ -93,3 +93,21 @@
                      ((require-bearer-token! (fn [req] {:status 200})
                                                  #{"secrettoken"})
                         {:headers {}}))) "should not set if no token present"))
+
+
+    (deftest request-is-html
+        (is (not (is-html? {})))
+        (is (not (is-html? {:headers {"accept" "*/*"}})))
+        (is (not (is-html? {:headers {"accept" "application/json"}})))
+        (is (is-html? {:headers {"accept" "text/html"}}))
+        (is (is-html? {:headers {"accept" "application/xhtml+xml"}}))
+        (is (is-html? {:headers {"accept" "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"}})))
+
+
+    (deftest request-if-html
+        (is (not (if-html {} true false)))
+        (is (not (if-html {:headers {"accept" "*/*"}} true false)))
+        (is (not (if-html {:headers {"accept" "application/json"}} true false)))
+        (is (if-html {:headers {"accept" "text/html"}} true false))
+        (is (if-html {:headers {"accept" "application/xhtml+xml"}} true false))
+        (is (if-html {:headers {"accept" "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"}} true false)))
