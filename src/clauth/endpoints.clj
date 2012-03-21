@@ -2,6 +2,7 @@
   (:use   [clauth.token])
   (:use   [clauth.client])
   (:use   [clauth.user])
+  (:use   [clauth.views :only [login-form-handler]])
   (:use   [cheshire.core])
   (:import [org.apache.commons.codec.binary Base64]))
 
@@ -64,33 +65,49 @@
 
 (defn grant-type
   "extract grant type from request"
-  [req _] ((req :params) "grant_type"))
+  [req _ _] ((req :params) "grant_type"))
 
 (defmulti token-request-handler grant-type)
 
-(defmethod token-request-handler "client_credentials" [req authenticator]
+(defmethod token-request-handler "client_credentials" [req client-authenticator _]
   (client-authenticated-request 
     req 
-    authenticator
+    client-authenticator
     (fn [req client] (respond-with-new-token client client))))
 
-(defmethod token-request-handler "password" [req authenticator]
+(defmethod token-request-handler "password" [req client-authenticator user-authenticator]
   (client-authenticated-request 
     req 
-    authenticator
-    (fn [req client] (if-let [user (authenticate-user ((req :params) "username") ((req :params) "password"))]
+    client-authenticator
+    (fn [req client] (if-let [user (user-authenticator ((req :params) "username") ((req :params) "password"))]
                         (respond-with-new-token client client)
                         (error-response "invalid_grant")))))
 
-(defmethod token-request-handler :default [req authenticator]
+(defmethod token-request-handler :default [req client-authenticator user-authenticator]
   (error-response "unsupported_grant_type"))
 
 
 (defn token-handler
   ([]
-    (token-handler clauth.client/authenticate-client))
-  ([authenticator]
+    (token-handler clauth.client/authenticate-client clauth.user/authenticate-user))
+  ([client-authenticator user-authenticator]
     (fn [req]
-      (token-request-handler req authenticator)
+      (token-request-handler req client-authenticator user-authenticator)
       )))
  
+(defn login-handler
+  "present a login form to user and log them in by adding an access token to the session"
+  ([client]
+    (login-handler login-form-handler clauth.user/authenticate-user client))
+  ([login-form client]
+    (login-handler login-form clauth.user/authenticate-user client))
+  ([login-form user-authenticator client]
+    (fn [req]
+      (if (= :get (req :request-method))
+        (login-form req)
+        (if-let [user (user-authenticator ((req :params) "username") ((req :params) "password"))]
+          { :status 302
+            :headers {"Content-Type" "text/html" "Location" "/"}
+            :session (assoc (req :session) :access_token (:token (create-token client user)))
+            :body "Redirecting to /"}
+          (login-form req)))))) 

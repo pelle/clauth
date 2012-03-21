@@ -24,6 +24,7 @@
             token (or (last
                     (re-find #"^Bearer (.*)$" (str auth)))
                     ((:params req {}) "access_token")
+                    ((:session req {}) :access_token)
                     (((:cookies req {}) "access_token" {}) :value )
                   )]
         (if-let [access-token (find-token token)]

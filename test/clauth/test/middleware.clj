@@ -58,6 +58,23 @@
                                                  #{"secrettoken"})
                         {}))) "should not set if no token present"))
 
+   (deftest bearer-token-from-session
+     
+     ;; authorization success adds oauth-token on request map
+     (is (= "secrettoken" (:access-token
+                     ((wrap-bearer-token (fn [req] req)
+                                                 #{"secrettoken"})
+                        { :session { :access_token "secrettoken" }}))) "find matching token")
+
+     (is (nil? (:access-token
+                     ((wrap-bearer-token (fn [req] req)
+                                                 #{"secrettoken"})
+                        { :session { :access_token "wrongtoken" }}))) "should only return matching token")
+
+      (is (nil? (:access-token
+                     ((wrap-bearer-token (fn [req] req)
+                                                 #{"secrettoken"})
+                        {}))) "should not set if no token present"))
 
    (deftest require-token
      

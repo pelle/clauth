@@ -2,11 +2,13 @@
 
 [![Build Status](https://secure.travis-ci.org/pelle/clauth.png)](http://travis-ci.org/pelle/clauth)
 
-This is a simple OAuth 2 provider that is designed to be a primary authentication provider for a Clojure Ring app.
+This is a simple OAuth 2 provider that is designed to be used as a primary authentication provider for a Clojure Ring app.
 
 It is under development by a Clojure novice. Please help give feedback on use of idiomatic clojure.
 
-It currently only handles OAuth2 bearer authentication and not the full OAuth2 authorization flow. This will be added.
+It currently only handles OAuth2 bearer authentication and interactive authentication. 
+
+The full OAuth 2 token authorization flow will be added shortly as everything else is now more or less working.
 
 See [draft-ietf-oauth-v2-bearer](http://tools.ietf.org/html/draft-ietf-oauth-v2-bearer-08)
 
@@ -103,6 +105,40 @@ And wrap your handler with a redis connection middleware similar to this:
          }
          (app req))))
 
+## Issuing OAuth Tokens
+
+There is currently a single token-handler that provides token issuance called token-handler. Install it in your routes by convention at "/token" or "/oauth/token". 
+
+    (defn routes [req]
+      (case (req :uri)
+        "/token" ((token-handler) req )
+        ((require-bearer-token! handler) req)))
+
+## Using as primary user authentication on server
+
+One of the ideas of this is using OAuth tokens together with traditional sessions based authentication providing the benefits of both. To do this we create a new token when a user logs in and adds it to the session.
+
+Why is this a good idea?
+
+* You will be able to view a list of other sessions going on for security purposes
+* You will be able to remotely log of another session
+* Your app deals with tokens only. So this is also ideal for an API with a javascript front end
+
+To use this make sure to wrap the session middleware. We have a login handler endpoint that could be used like this:
+
+    (defn routes [master-client]
+      (fn [req]
+      (case (req :uri)
+        "/login" ((login-handler master-client) req )
+        ((require-bearer-token! handler) req))))
+
+The master-client is a client record representing your own application. A default login view is defined in clauth.views/login-form-handler but you can add your own. This just needs to be a ring handler presenting a form with the parameters "username" and "password".
+
+    (defn routes [master-client]
+      (fn [req]
+      (case (req :uri)
+        "/login" ((login-handler my-own-login-form-handler master-client) req )
+        ((require-bearer-token! handler) req))))
 
 ## Run Demo App
 
@@ -114,8 +150,8 @@ A mini server demo is available. It creates a client for you and prints out inst
 
 The goal is to implement the full [OAuth2 spec](http://tools.ietf.org/html/draft-ietf-oauth-v2-25) in this order:
 
-* [Authorization Code Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.1)
 * [Implicit Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.2)
+* [Authorization Code Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.1)
 * [Refresh Tokens](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-1.5)
 
 ## License

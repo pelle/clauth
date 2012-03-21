@@ -1,4 +1,4 @@
-(defproject clauth "1.0.0-SNAPSHOT"
+(defproject clauth "1.0.0-beta1"
   :description "OAuth2 based authentication library for Ring"
   :url "http://github.com/pelle/clauth"
 
@@ -8,7 +8,8 @@
                  [ring/ring-core "1.0.2"]
                  [cheshire "2.1.0"]
                  [clj-time "0.3.7"]
-                 [org.mindrot/jbcrypt "0.3m"]]
+                 [org.mindrot/jbcrypt "0.3m"]
+                 [hiccup "1.0.0-beta1"]]
 
   :dev-dependencies [[ring/ring-jetty-adapter "1.0.0"]
                      [lein-marginalia "0.7.0"]

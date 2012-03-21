@@ -26,7 +26,7 @@
     (deftest requesting-client-owner-token
         (reset-token-store!)
         (clauth.client/reset-client-store!)
-        (let [ handler (token-handler clauth.client/authenticate-client)
+        (let [ handler (token-handler)
                client (clauth.client/register-client)]
 
             (is (= (handler { 
@@ -65,7 +65,7 @@
         (reset-token-store!)
         (clauth.client/reset-client-store!)
         (clauth.user/reset-user-store!)
-        (let [ handler (token-handler clauth.client/authenticate-client)
+        (let [ handler (token-handler)
                client (clauth.client/register-client)
                user   (clauth.user/register-user "john@example.com" "password")]
 
@@ -129,7 +129,7 @@
     (deftest requesting-unsupported-grant
         (reset-token-store!)
         (clauth.client/reset-client-store!)
-        (let [ handler (token-handler clauth.client/authenticate-client)
+        (let [ handler (token-handler)
                client (clauth.client/register-client)]
 
             (is (= (handler { :params { "grant_type" "telepathy"}})
@@ -140,4 +140,38 @@
             (is (= (handler { :params { }})
                 { :status 400
                   :headers {"Content-Type" "application/json"}
-                  :body "{\"error\":\"unsupported_grant_type\"}"}) "should fail with missing grant type") ))
+                  :body "{\"error\":\"unsupported_grant_type\"}"}) "should fail with missing grant type")))
+
+
+    (deftest interactive-login-session
+        (reset-token-store!)
+        (clauth.client/reset-client-store!)
+        (clauth.user/reset-user-store!)
+        (let [ client (clauth.client/register-client)
+               handler (login-handler (fn [_] "login form" ) client)
+               user   (clauth.user/register-user "john@example.com" "password")]
+
+            (let [ response (handler { 
+                    :request-method :post
+                    :params {
+                        "username" "john@example.com"
+                        "password" "password"}})
+                   session (response :session)
+                   token-string (session :access_token)
+                   token (fetch-token token-string)]
+              (is (= 302 (response :status)) "Should redirect user")
+              (is (= user (:subject token)) "should set user to token")
+              (is (= client (:client token)) "should set client to token")
+
+            (let [ response (handler { 
+                    :request-method :get })]
+              (is (= response "login form") "should show login form"))
+
+            (let [ response (handler { 
+                    :request-method :post
+                    :params {
+                        "username" "john@example.com"
+                        "password" "wrong"}})]
+              (is (= response "login form") "should show login form for wrong password")))))
+
+
