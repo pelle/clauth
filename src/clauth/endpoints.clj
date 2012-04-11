@@ -2,6 +2,7 @@
   (:use   [clauth.token])
   (:use   [clauth.client])
   (:use   [clauth.user])
+  (:use   [clauth.middleware :only [csrf-protect!]])
   (:use   [clauth.views :only [login-form-handler]])
   (:use   [cheshire.core])
   (:import [org.apache.commons.codec.binary Base64]))
@@ -102,12 +103,13 @@
   ([login-form client]
     (login-handler login-form clauth.user/authenticate-user client))
   ([login-form user-authenticator client]
-    (fn [req]
-      (if (= :get (req :request-method))
-        (login-form req)
-        (if-let [user (user-authenticator ((req :params) "username") ((req :params) "password"))]
-          { :status 302
-            :headers {"Content-Type" "text/html" "Location" "/"}
-            :session (assoc (req :session) :access_token (:token (create-token client user)))
-            :body "Redirecting to /"}
-          (login-form req)))))) 
+    (csrf-protect!
+      (fn [req]
+        (if (= :get (req :request-method))
+          (login-form req)
+          (if-let [user (user-authenticator ((req :params) "username") ((req :params) "password"))]
+            { :status 302
+              :headers {"Content-Type" "text/html" "Location" "/"}
+              :session (assoc (req :session) :access_token (:token (create-token client user)))
+              :body "Redirecting to /"}
+            (login-form req)))))))

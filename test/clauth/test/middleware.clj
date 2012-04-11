@@ -111,3 +111,35 @@
         (is (if-html {:headers {"accept" "text/html"}} true false))
         (is (if-html {:headers {"accept" "application/xhtml+xml"}} true false))
         (is (if-html {:headers {"accept" "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"}} true false)))
+
+    (deftest csrf-token-extraction
+        (is (nil? (csrf-token {})))
+        (is (= "token" (csrf-token { :session { :csrf-token "token" }}))))
+
+    (deftest csrf-is-added-to-session
+        (let [handler (csrf-protect! (fn [req] req ))]
+            (is (not (nil? (:csrf-token (:session (with-csrf-token {}))))))
+            (is (= "existing" (:csrf-token (:session (with-csrf-token { :session {:csrf-token "existing"}})))))))
+
+    (deftest protects-against-csrf
+        (let [handler (csrf-protect! (fn [req] req ))]
+            (is (not (nil? (:csrf-token (:session (handler { :request-method :get }))))))
+            (is (= "existing" (:csrf-token (:session (handler { :request-method :get :session {:csrf-token "existing"}}))))))
+
+        (let [handler (csrf-protect! (fn [req] {:status 200 } ))]
+            (is (= 403 (:status
+                        (handler { :request-method :post }))))
+            (is (= 200 (:status
+                        (handler { :request-method :get }))))
+            (is (= 200 (:status
+                        (handler {  :request-method :post 
+                                    :session {:csrf-token "secrettoken"} 
+                                    :params {"csrf-token" "secrettoken"} }))))
+            (is (= 403 (:status
+                        (handler {  :request-method :post 
+                                    :session {:csrf-token "secrettoken"} 
+                                    :params {"csrf-token" "badtoken"} }))))
+            (is (= 403 (:status
+                        (handler {  :request-method :post 
+                                    :session {csrf-token "secrettoken"}}))))
+            ))

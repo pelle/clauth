@@ -43,6 +43,38 @@
   [req html api]
   `(if (is-html? ~req) ~html ~api))
 
+(defn csrf-token
+  "extract csrf token from request"
+  [req]
+  ((req :session {}) :csrf-token))
+
+(defn with-csrf-token
+  "add a csrf token to request"
+  [req]
+  (if (csrf-token req)
+    req
+    (let [token (crypto.random/base64 32)
+      session (assoc (req :session {}) :csrf-token token)]
+      (assoc req :session session))))
+
+(defn csrf-protect!
+  "add a csrf token to session and reject a post request without it"
+  [app]
+    (fn
+      [req]
+      (let [req (with-csrf-token req)
+            token (csrf-token req)
+            session (req :session)]
+        (if (or 
+              (= (:request-method req) :get)
+              (= token ((req :params {}) "csrf-token")))
+          (let [response (app req)
+                session (assoc (response :session (req :session)) :csrf-token token)]
+            (assoc response :session session))
+
+          { :status 403 }))))
+
+
 (defn athentication-required-response 
   "Return HTTP 401 Response"
   [ req ]

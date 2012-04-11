@@ -148,14 +148,16 @@
         (clauth.client/reset-client-store!)
         (clauth.user/reset-user-store!)
         (let [ client (clauth.client/register-client)
-               handler (login-handler (fn [_] "login form" ) client)
+               handler (login-handler (fn [_] { :body "login form" } ) client)
                user   (clauth.user/register-user "john@example.com" "password")]
 
             (let [ response (handler { 
                     :request-method :post
+                    :session {:csrf-token "csrftoken"}
                     :params {
                         "username" "john@example.com"
-                        "password" "password"}})
+                        "password" "password"
+                        "csrf-token" "csrftoken"}})
                    session (response :session)
                    token-string (session :access_token)
                    token (fetch-token token-string)]
@@ -165,13 +167,15 @@
 
             (let [ response (handler { 
                     :request-method :get })]
-              (is (= response "login form") "should show login form"))
+              (is (= ( response :body ) "login form") "should show login form"))
 
             (let [ response (handler { 
                     :request-method :post
+                    :session {:csrf-token "csrftoken"}
                     :params {
                         "username" "john@example.com"
-                        "password" "wrong"}})]
-              (is (= response "login form") "should show login form for wrong password")))))
+                        "password" "wrong"
+                        "csrf-token" "csrftoken"}})]
+              (is (= (response :body) "login form") "should show login form for wrong password")))))
 
 
