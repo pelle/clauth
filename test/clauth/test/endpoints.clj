@@ -162,8 +162,25 @@
                    token-string (session :access_token)
                    token (fetch-token token-string)]
               (is (= 302 (response :status)) "Should redirect user")
+              (is (= "/" ((response :headers) "Location")) "Should redirect user to home")
               (is (= user (:subject token)) "should set user to token")
-              (is (= client (:client token)) "should set client to token")
+              (is (= client (:client token)) "should set client to token"))
+
+            (let [ response (handler { 
+                    :request-method :post
+                    :session {:csrf-token "csrftoken" :return-to "/authorization"}
+                    :params {
+                        "username" "john@example.com"
+                        "password" "password"
+                        "csrf-token" "csrftoken"}})
+                   session (response :session)
+                   token-string (session :access_token)
+                   token (fetch-token token-string)]
+              (is (= 302 (response :status)) "Should redirect user")
+              (is (= "/authorization" ((response :headers) "Location")) "Should redirect user to whatever is in the return-to session")
+              (is (nil? (session :return-to)) "Should remove return-to from session")
+              (is (= user (:subject token)) "should set user to token")
+              (is (= client (:client token)) "should set client to token"))
 
             (let [ response (handler { 
                     :request-method :get })]
@@ -176,6 +193,6 @@
                         "username" "john@example.com"
                         "password" "wrong"
                         "csrf-token" "csrftoken"}})]
-              (is (= (response :body) "login form") "should show login form for wrong password")))))
+              (is (= (response :body) "login form") "should show login form for wrong password"))))
 
 

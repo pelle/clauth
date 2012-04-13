@@ -8,14 +8,41 @@
   (:use [ring.adapter.jetty])
   (:use [ring.middleware.cookies])
   (:use [ring.middleware.session])
-  (:use [ring.middleware.params]))
+  (:use [ring.middleware.params])
+  (:use [hiccup.bootstrap.middleware])
+  (:use [hiccup.bootstrap.page])
+  (:use [hiccup.page])
+  (:use [hiccup.element]))
 
+(defn nav-menu []
+  [(link-to "/login" "Login")]
+  )
+
+(defn layout [title & body]
+  (html5
+    [:head
+      [:title (or title "Clauth demo")]
+      (include-bootstrap)]
+    [:body
+      (fixed-layout
+        [:div {:class "navbar"}
+          [:div {:class "navbar-inner"}
+            [:div {:class "container"}
+              [:a {:href "/" :class "brand"} "Clauth"]
+              (unordered-list {:class "nav"} (nav-menu))]]]
+        [:h1 (or title "Clauth demo")]
+        body)]))
+
+(defn use-layout 
+  "Wrap a response with a layout"
+  [title response]
+  (assoc response :body (layout title (response :body))))
 
 (defn handler 
   "dummy ring handler. Returns json with the token if present."
   [request]
   (if-html request
-    (clauth.views/hello-world request)
+    (use-layout nil (clauth.views/hello-world request))
     {:status 200
      :headers {"Content-Type" "application/json"}
      :body (if-let [token (request :access-token)]
@@ -27,7 +54,8 @@
   (fn [req]
     (case (req :uri)
       "/token" ((token-handler) req )
-      "/login" ((login-handler master-client) req )
+      "/authorization" (use-layout "Authorize App" ((authorization-handler) req ))
+      "/login" (use-layout "Login" ((login-handler master-client) req ))
       ((require-bearer-token! handler) req))))
 
 (defn wrap-redis-store [app]
@@ -72,5 +100,6 @@
       (run-jetty (-> (routes client)
                 (wrap-params) 
                 (wrap-cookies)
-                (wrap-session)
-                (wrap-redis-store)) {:port 3000})))))
+                (wrap-session)                
+                (wrap-redis-store)
+                (wrap-bootstrap-resources)) {:port 3000})))))

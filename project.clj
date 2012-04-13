@@ -13,5 +13,6 @@
 
   :dev-dependencies [[ring/ring-jetty-adapter "1.0.0"]
                      [lein-marginalia "0.7.0"]
-                     [org.clojars.tavisrudd/redis-clojure "1.3.1"]]
+                     [org.clojars.tavisrudd/redis-clojure "1.3.1"]
+                     [hiccup-bootstrap "0.1.0"]]
   :main clauth.demo)
