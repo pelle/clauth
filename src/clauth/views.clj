@@ -43,7 +43,7 @@
         (csrf-field req)
         (include-hidden-params req ["client_id" "response_type" "redirect_uri" "scope" "state"])
         [:div {:class "form-actions"}
-          [:button {:type "submit" :class "btn btn-primary"} "Authorization"]
+          [:button {:type "submit" :class "btn btn-primary"} "Authorize"]
           [:a {:class "btn" :href (or ((req :params) "redirect_uri") "/")} "Cancel"]]))))
 
 (defn authorization-form-handler
@@ -54,6 +54,12 @@
     :headers {"Content-Type" "text/html"}
     :body (authorization-form req)})
 
+(defn error-page
+  "returns a simple error page"
+  [error]
+  (response (html
+    [:h1 error])
+  ))
 
 (defn hello-world
   [req]

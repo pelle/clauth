@@ -14,11 +14,13 @@
   (:use [hiccup.page])
   (:use [hiccup.element]))
 
-(defn nav-menu []
-  [(link-to "/login" "Login")]
-  )
+(defn nav-menu [req]
+  (if (logged-in? req)
+    [(link-to "/logout" "Logout")]
+    [(link-to "/login" "Login")]
+    ))
 
-(defn layout [title & body]
+(defn layout [req title & body]
   (html5
     [:head
       [:title (or title "Clauth demo")]
@@ -29,34 +31,38 @@
           [:div {:class "navbar-inner"}
             [:div {:class "container"}
               [:a {:href "/" :class "brand"} "Clauth"]
-              (unordered-list {:class "nav"} (nav-menu))]]]
+              (unordered-list {:class "nav"} (nav-menu req))]]]
         [:h1 (or title "Clauth demo")]
         body)]))
 
 (defn use-layout 
   "Wrap a response with a layout"
-  [title response]
-  (assoc response :body (layout title (response :body))))
+  [req title response]
+  (assoc response :body (layout req title (response :body))))
 
 (defn handler 
   "dummy ring handler. Returns json with the token if present."
-  [request]
-  (if-html request
-    (use-layout nil (clauth.views/hello-world request))
+  [req]
+  (if-html req
+    (use-layout req nil (clauth.views/hello-world req))
     {:status 200
      :headers {"Content-Type" "application/json"}
-     :body (if-let [token (request :access-token)]
+     :body (if-let [token (req :access-token)]
                   (str "{\"token\":\"" (str (:token token)) "\"}")
                   "{}"
           )}))
 
 (defn routes [master-client]
   (fn [req]
+    (do
+      ; (prn (req :session))
+      ; (prn req)
     (case (req :uri)
       "/token" ((token-handler) req )
-      "/authorization" (use-layout "Authorize App" ((authorization-handler) req ))
-      "/login" (use-layout "Login" ((login-handler master-client) req ))
-      ((require-bearer-token! handler) req))))
+      "/authorization" (use-layout req "Authorize App" ((authorization-handler) req ))
+      "/login" (use-layout req "Login" ((login-handler master-client) req ))
+      "/logout" (logout-handler req )
+      ((require-bearer-token! handler) req)))))
 
 (defn wrap-redis-store [app]
   (fn [req]

@@ -100,7 +100,7 @@
   "Return HTTP 401 Response"
   [ req ]
   (if-html req 
-    (assoc (redirect "/login") :session {:return-to (str (req :uri) "?" (req :query_string))})
+    (assoc (redirect "/login") :session {:return-to (str (req :uri) "?" (req :query-string))})
     { :status  401
     :headers {
       "Content-Type" "text/plain"
@@ -135,8 +135,8 @@
            (athentication-required-response req ))) find-token)))
 
 (defn request-uri [req]
-  (if (req :query_string)
-    (str (req :uri) "?" (req :query_string))
+  (if (req :query-string)
+    (str (req :uri) "?" (req :query-string))
     (req :uri)))
 
 (defn user-session-required-response 

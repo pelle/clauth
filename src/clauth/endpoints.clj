@@ -3,7 +3,7 @@
   (:use   [clauth.client])
   (:use   [clauth.user])
   (:use   [clauth.middleware :only [csrf-protect! require-user-session!]])
-  (:use   [clauth.views :only [login-form-handler authorization-form-handler]])
+  (:use   [clauth.views :only [login-form-handler authorization-form-handler error-page]])
   (:use   [hiccup.util :only [url-encode]])
   (:use   [ring.util.response])
   (:use   [cheshire.core])
@@ -120,6 +120,23 @@
                 :body "Redirecting to /"})
             (login-form req)))))))
 
+(defn logout-handler
+  "logout user"
+  [req]
+    (assoc (redirect "/") :session ( dissoc (req :session) :access_token)))
+
+(defn logged-in?
+  "returns true if request is logged in"
+  [req]
+  (not (nil? (req :access-token))))
+  
+(defn current-user
+  "returns current user associated with request"
+  [req]
+  (if (logged-in? req)
+    (:subject (req :access-token))))
+  
+
 (defn response-type
   "extract grant type from request"
   [req] ((req :params) "response_type"))
@@ -139,9 +156,9 @@
 (defn authorization-error-response
   "redirect to client with error code"
   [req error]
-  (authorization-response req { "error" error}))
-
-
+  (if ((req :params) "redirect_uri")
+    (authorization-response req { "error" error })
+    (error-page error)))
 
 (defmulti authorization-request-handler response-type)
 

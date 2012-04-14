@@ -143,27 +143,27 @@
                         "redirect_uri" redirect_uri
                         "state" "abcde"
                         "scope" "calendar"}
-              query_string (url-encode params)]
+              query-string (url-encode params)]
 
             (let [ session_token (create-token client user)
                    response (handler { 
                     :request-method :get
                     :params params 
                     :uri uri
-                    :query_string query_string
+                    :query-string query-string
                     :session { :access_token ( :token session_token )}})]
               (is (= (response :status) 200)))
 
             (let [ response (handler { 
                     :request-method :get
                     :uri uri
-                    :query_string query_string
+                    :query-string query-string
                     :headers {"accept" "text/html"}
                     :params params })
                    session (response :session)]
                           (is (= (response :status) 302))
                           (is (= (session :return-to) 
-                            (str uri "?" query_string)))
+                            (str uri "?" query-string)))
                           (is (= (response :headers) {"Location" "/login"})))
             ;; Missing parameters
             (let [ session_token (create-token client user)
@@ -171,7 +171,7 @@
                     :request-method :get
                     :params (dissoc params "response_type")
                     :uri uri
-                    :query_string query_string
+                    :query-string query-string
                     :session { :access_token ( :token session_token )}})]
               (is (= (response :status) 302))
               (is (= (response :headers) { "Location" "http://test.com?state=abcde&error=invalid_request" })))
@@ -181,7 +181,7 @@
                     :request-method :get
                     :params (dissoc params "client_id")
                     :uri uri
-                    :query_string query_string
+                    :query-string query-string
                     :session { :access_token ( :token session_token )}})]
               (is (= (response :status) 302))
               (is (= (response :headers) { "Location" "http://test.com#state=abcde&error=invalid_request" }) "should redirect with error in fragment"))
@@ -191,7 +191,7 @@
                     :request-method :get
                     :params (dissoc params "client_id" "state")
                     :uri uri
-                    :query_string query_string
+                    :query-string query-string
                     :session { :access_token ( :token session_token )}})]
               (is (= (response :status) 302))
               (is (= (response :headers) { "Location" "http://test.com#error=invalid_request" }) "should redirect with error in fragment"))
@@ -201,7 +201,7 @@
                     :request-method :get
                     :params (assoc params "response_type" "unsupported")
                     :uri uri
-                    :query_string query_string
+                    :query-string query-string
                     :session { :access_token ( :token session_token )}})]
               (is (= (response :status) 302))
               (is (= (response :headers) { "Location" "http://test.com?state=abcde&error=unsupported_response_type" }) "should return error on unsupported response type"))
@@ -213,7 +213,7 @@
                     :request-method :post
                     :params params 
                     :uri uri
-                    :query_string query_string
+                    :query-string query-string
                     :session { 
                       :access_token ( :token session_token )
                       :csrf-token "csrftoken" }})
@@ -295,4 +295,18 @@
                         "csrf-token" "csrftoken"}})]
               (is (= (response :body) "login form") "should show login form for wrong password"))))
 
+
+    (deftest login-helpers
+      (let [req {}]
+        (is (not (logged-in? req)) "should not be marked as logged in")
+        (is (nil? (current-user req)) "should not have a current user")
+        )
+
+      (let [
+          client (clauth.client/register-client)
+          user   (clauth.user/register-user "john@example.com" "password")
+          session-token (create-token client user)
+          req { :access-token session-token}]
+        (is (logged-in? req) "should be marked as logged in")
+        (is (= (current-user req) user) "should have a current user")))
 

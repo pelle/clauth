@@ -43,6 +43,12 @@ Grant types are implemented using multimethods. To implement one
 
     (defmethod token-request-handler "my_grant_type" [req authenticator] ...)
 
+## Authorization request
+
+We currently support the following authorization requests:
+
+* [Implicit Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.2)
+
 ## Tokens
 
 There is a protocol defined called Expirable which implements one function:
@@ -150,7 +156,6 @@ A mini server demo is available. It creates a client for you and prints out inst
 
 The goal is to implement the full [OAuth2 spec](http://tools.ietf.org/html/draft-ietf-oauth-v2-25) in this order:
 
-* [Implicit Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.2)
 * [Authorization Code Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.1)
 * [Refresh Tokens](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-1.5)
 

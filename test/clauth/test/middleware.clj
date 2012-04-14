@@ -83,10 +83,10 @@
                      ((require-bearer-token! (fn [req] {:status 200} )
                                                  #{"secrettoken"})
                         {:headers {"authorization" "Bearer secrettoken"}}))) "find matching token")
-     
+
      (let [response ((require-bearer-token! (fn [req] {:status 200} )
                                                  #{"secrettoken"})
-                         { :headers { "accept" "text/html" } :query_string "test=123" :uri "/protected" })]
+                         { :headers { "accept" "text/html" } :query-string "test=123" :uri "/protected" })]
          (is (= 302 (:status response)) "redirect")
          (is (= "/login" ((:headers response) "Location")) "to login")
          (is (= "/protected?test=123" ((:session response) :return-to)) "set return-to"))
@@ -110,7 +110,7 @@
 
      (let [response ((require-user-session! (fn [req] {:status 200} )
                                                  #{"secrettoken"})
-                         { :headers { "accept" "text/html" } :query_string "test=123" :uri "/protected" })]
+                         { :headers { "accept" "text/html" } :query-string "test=123" :uri "/protected" })]
          (is (= 302 (:status response)) "redirect")
          (is (= "/login" ((:headers response) "Location")) "to login")
          (is (= "/protected?test=123" ((:session response) :return-to)) "set return-to"))
