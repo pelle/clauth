@@ -13,8 +13,7 @@
   "Include certain parameters as hidden fields if present"
   [{ params :params} fields]
     (map #(hidden-field (key %) (val %)) 
-    (filter #( val % ) 
-      (select-keys params fields))))
+    (filter val (select-keys params fields))))
 
 (defn login-form 
   ([req] (login-form req (req :uri) ((req :params) "username") ((req :params) "password")))

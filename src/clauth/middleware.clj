@@ -15,7 +15,7 @@
   * Non standard http cookie ('access_token') for use in interactive applications
 
 
-  The subject is added to the :oauth-token key of the request."
+  The subject is added to the :access-token key of the request."
   
   ([app]
     (wrap-bearer-token app clauth.token/find-valid-token ))
@@ -31,6 +31,27 @@
         (if-let [access-token (find-token token)]
           (app ( assoc req :access-token access-token))
           (app req))))))
+
+(defn wrap-user-session
+  "Wrap request with a OAuth2 token stored in the session. Use this for optional authentication where no API access is wished.
+
+  A find-token function is passed the token and returns a clojure map describing the subject of the token.
+
+  It supports the following ways of setting the token.
+
+
+  The subject is added to the :access-token key of the request."
+  
+  ([app]
+    (wrap-user-session app clauth.token/find-valid-token ))
+  ([app find-token]
+    (fn [req]
+      (let [auth ((:headers req {}) "authorization")
+            token ((:session req {}) :access_token)]
+        (if-let [access-token (find-token token)]
+          (app ( assoc req :access-token access-token))
+          (app req))))))
+
 
 (defn is-html?
   "returns true if request has text/html in the accept header"
@@ -79,7 +100,7 @@
   "Return HTTP 401 Response"
   [ req ]
   (if-html req 
-    (redirect "/login")
+    (assoc (redirect "/login") :session {:return-to (str (req :uri) "?" (req :query_string))})
     { :status  401
     :headers {
       "Content-Type" "text/plain"
@@ -112,3 +133,38 @@
        (if (req :access-token)
            (app req)
            (athentication-required-response req ))) find-token)))
+
+(defn request-uri [req]
+  (if (req :query_string)
+    (str (req :uri) "?" (req :query_string))
+    (req :uri)))
+
+(defn user-session-required-response 
+  "Return HTTP 403 Response or redirects to login"
+  [ req ]
+  (if-html req 
+    (assoc (redirect "/login") :session {:return-to (request-uri req)})
+    { :status  403
+      :headers {
+        "Content-Type" "text/plain" }
+      :body "Forbidden" }))
+
+(defn require-user-session!
+  "Require that user is authenticated via an access_token stored in the session.
+
+  Use this to protect parts of your application that web services should not have access to.
+
+  A find-token function is passed the token and returns a clojure map describing the token.
+
+  The token is added to the :access-token key of the request.
+
+  Will redirect user to login url if not authenticated and issue a 403 to other requests."
+
+  ([app]
+    (require-user-session! app clauth.token/find-valid-token ))  
+  ([app find-token]
+    (wrap-user-session
+     (fn [req]
+       (if (req :access-token)
+           (app req)
+           (user-session-required-response req ))) find-token)))

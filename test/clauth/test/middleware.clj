@@ -83,6 +83,13 @@
                      ((require-bearer-token! (fn [req] {:status 200} )
                                                  #{"secrettoken"})
                         {:headers {"authorization" "Bearer secrettoken"}}))) "find matching token")
+     
+     (let [response ((require-bearer-token! (fn [req] {:status 200} )
+                                                 #{"secrettoken"})
+                         { :headers { "accept" "text/html" } :query_string "test=123" :uri "/protected" })]
+         (is (= 302 (:status response)) "redirect")
+         (is (= "/login" ((:headers response) "Location")) "to login")
+         (is (= "/protected?test=123" ((:session response) :return-to)) "set return-to"))
 
      (is (= 401 (:status
                      ((require-bearer-token! (fn [req] {:status 200})
@@ -93,6 +100,34 @@
                      ((require-bearer-token! (fn [req] {:status 200})
                                                  #{"secrettoken"})
                         {:headers {}}))) "should not set if no token present"))
+
+   (deftest require-user-session
+     
+     (is (= 200 (:status
+                     ((require-user-session! (fn [req] {:status 200} )
+                                                 #{"secrettoken"})
+                         { :session { :access_token "secrettoken" }}))) "allow from session")
+
+     (let [response ((require-user-session! (fn [req] {:status 200} )
+                                                 #{"secrettoken"})
+                         { :headers { "accept" "text/html" } :query_string "test=123" :uri "/protected" })]
+         (is (= 302 (:status response)) "redirect")
+         (is (= "/login" ((:headers response) "Location")) "to login")
+         (is (= "/protected?test=123" ((:session response) :return-to)) "set return-to"))
+
+     (is (= 403 (:status
+                     ((require-user-session! (fn [req] {:status 200} )
+                                                 #{"secrettoken"})
+                        {:headers {"authorization" "Bearer secrettoken"}}))) "Disallow from auth header")
+     (is (= 403 (:status
+                 ((require-user-session! (fn [req] {:status 200} )
+                                             #{"secrettoken"})
+                    {:cookies {"access_token" { :value "secrettoken"}}}))) "Disallow from cookies")
+     (is (= 403 (:status
+                     ((require-user-session! (fn [req] {:status 200} )
+                                                 #{"secrettoken"})
+                        {:params {"access_token" "secrettoken"}}))) "Disallow from params"))
+
 
 
     (deftest request-is-html

@@ -2,8 +2,10 @@
   (:use   [clauth.token])
   (:use   [clauth.client])
   (:use   [clauth.user])
-  (:use   [clauth.middleware :only [csrf-protect!]])
+  (:use   [clauth.middleware :only [csrf-protect! require-user-session!]])
   (:use   [clauth.views :only [login-form-handler authorization-form-handler]])
+  (:use   [hiccup.util :only [url-encode]])
+  (:use   [ring.util.response])
   (:use   [cheshire.core])
   (:import [org.apache.commons.codec.binary Base64]))
 
@@ -118,13 +120,36 @@
                 :body "Redirecting to /"})
             (login-form req)))))))
 
+(defn authorization-error-handler
+  "redirect to client with error code"
+  [req error]
+  (let [  params (req :params)
+          redirect_uri (params "redirect_uri")
+          error_params  (merge { "error" error } (filter val (select-keys params ["state"])))
+          error_string (url-encode error_params)
+        ]
+    (redirect (str redirect_uri 
+        (if (= (params "response_type") "token")
+          "#"
+          "?")
+        error_string
+      ))))
 (defn authorization-handler
   "present a login form to user and log them in by adding an access token to the session"
   ([]
     (authorization-handler authorization-form-handler))
   ([login-form]
-    (csrf-protect!
-      (fn [req]
-        (if (= :get (req :request-method))
-          (login-form req)
-          )))))
+    (require-user-session!
+      (csrf-protect!
+        (fn [req]
+          (let [params (req :params)]
+            (if (and (params "response_type") (params "client_id"))
+
+              (if (= (params "response_type") "token")
+                (if (= :get (req :request-method))
+                  (authorization-form-handler req)
+                )
+                (authorization-error-handler req "unsupported_response_type")
+              )
+              (authorization-error-handler req "invalid_request"))))))))
+
