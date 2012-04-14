@@ -120,20 +120,23 @@
                 :body "Redirecting to /"})
             (login-form req)))))))
 
-(defn authorization-error-handler
-  "redirect to client with error code"
-  [req error]
-  (let [  params (req :params)
-          redirect_uri (params "redirect_uri")
-          error_params  (merge { "error" error } (filter val (select-keys params ["state"])))
-          error_string (url-encode error_params)
-        ]
+(defn authorization-response
+  "Create a proper redirection response depending on response_type"
+  [req response_params ]
+  (let [ params (req :params)
+         redirect_uri (params "redirect_uri")]
     (redirect (str redirect_uri 
         (if (= (params "response_type") "token")
           "#"
           "?")
-        error_string
+        (url-encode (merge response_params (filter val (select-keys (req :params) ["state"]))))
       ))))
+
+(defn authorization-error-handler
+  "redirect to client with error code"
+  [req error]
+  (authorization-response req { "error" error}))
+
 (defn authorization-handler
   "present a login form to user and log them in by adding an access token to the session"
   ([]
