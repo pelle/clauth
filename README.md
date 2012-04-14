@@ -19,6 +19,12 @@ The following bearer tokens are implemented:
 * [URI query field](http://tools.ietf.org/html/draft-ietf-oauth-v2-bearer-08#section-2.3)
 * Non standard http cookie ('access_token') for use in interactive applications
 
+## Install
+
+Add the following dependency to your `project.clj` file:
+
+    [clauth "1.0.0-beta2"]
+
 ## Usage
 
 There are currently 2 middlewares defined:
