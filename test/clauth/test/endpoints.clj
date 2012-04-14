@@ -204,9 +204,28 @@
                     :query_string query_string
                     :session { :access_token ( :token session_token )}})]
               (is (= (response :status) 302))
-              (is (= (response :headers) { "Location" "http://test.com?state=abcde&error=unsupported_response_type" })))
+              (is (= (response :headers) { "Location" "http://test.com?state=abcde&error=unsupported_response_type" }) "should return error on unsupported response type"))
 
-            ))
+
+            (let [ session_token (create-token client user)
+                   params (assoc params "csrf-token" "csrftoken")
+                   response (handler { 
+                    :request-method :post
+                    :params params 
+                    :uri uri
+                    :query_string query_string
+                    :session { 
+                      :access_token ( :token session_token )
+                      :csrf-token "csrftoken" }})
+                   redirect_uri ((response :headers) "Location")
+                   token_string (last (re-find #"access_token=([^&]+)" redirect_uri))
+                   token (fetch-token token_string)]
+              (is (= (response :status) 302))
+              (is (= redirect_uri (str "http://test.com#state=abcde&access_token=" token_string "&token_type=bearer" )) "should redirect with proper format")
+              (is (= (:client token) client) "should properly set client")
+              (is (= (:subject token) user) "should properly set subject")
+            )))
+
     (deftest requesting-unsupported-grant
         (reset-token-store!)
         (clauth.client/reset-client-store!)

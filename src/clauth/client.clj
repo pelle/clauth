@@ -25,7 +25,7 @@
   (reset-store! @client-store))
 
 (defn fetch-client
-  "Find OAuth token based on the token string"
+  "Find OAuth token based on the id string"
   [t]
   (client-app (fetch @client-store t)))
 

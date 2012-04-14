@@ -120,6 +120,10 @@
                 :body "Redirecting to /"})
             (login-form req)))))))
 
+(defn response-type
+  "extract grant type from request"
+  [req] ((req :params) "response_type"))
+
 (defn authorization-response
   "Create a proper redirection response depending on response_type"
   [req response_params ]
@@ -132,10 +136,24 @@
         (url-encode (merge response_params (filter val (select-keys (req :params) ["state"]))))
       ))))
 
-(defn authorization-error-handler
+(defn authorization-error-response
   "redirect to client with error code"
   [req error]
   (authorization-response req { "error" error}))
+
+
+
+(defmulti authorization-request-handler response-type)
+
+(defmethod authorization-request-handler "token" [req]
+  (let [ params (req :params)
+         client (fetch-client (params "client_id"))
+         user ( :subject (fetch-token (:access_token (req :session))))
+         token (create-token client user)]
+    (authorization-response req {:access_token (:token token) :token_type "bearer"})))
+
+(defmethod authorization-request-handler :default [req]
+  (authorization-error-response req "unsupported_grant_type"))
 
 (defn authorization-handler
   "present a login form to user and log them in by adding an access token to the session"
@@ -151,8 +169,9 @@
               (if (= (params "response_type") "token")
                 (if (= :get (req :request-method))
                   (authorization-form-handler req)
+                  (authorization-request-handler req)
                 )
-                (authorization-error-handler req "unsupported_response_type")
+                (authorization-error-response req "unsupported_response_type")
               )
-              (authorization-error-handler req "invalid_request"))))))))
+              (authorization-error-response req "invalid_request"))))))))
 
