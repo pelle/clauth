@@ -1,6 +1,6 @@
 (ns clauth.test.token
-  (:use [clauth.token])
-  (:use [clojure.test])
+  (:use [clauth.token]
+        [clojure.test])
   (:require [clj-time.core :as time]))
 
    (deftest token-records

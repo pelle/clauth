@@ -1,6 +1,6 @@
 (ns clauth.test.user
-  (:use [clauth.user])
-  (:use [clojure.test]))
+  (:use [clauth.user]
+        [clojure.test]))
 
    (deftest user-registration
      (reset-user-store!)

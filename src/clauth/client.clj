@@ -1,6 +1,6 @@
 (ns clauth.client
-    (:use [clauth.token])
-    (:use [clauth.store]))
+    (:use [clauth.token]
+          [clauth.store]))
 
 
 (defonce client-store (atom (create-memory-store)))

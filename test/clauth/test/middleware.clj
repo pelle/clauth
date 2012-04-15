@@ -1,6 +1,6 @@
 (ns clauth.test.middleware
-  (:use [clauth.middleware])
-  (:use [clojure.test]))
+  (:use [clauth.middleware]
+        [clojure.test]))
 
    (deftest bearer-token-from-header
      
@@ -28,12 +28,12 @@
      (is (= "secrettoken" (:access-token
                      ((wrap-bearer-token (fn [req] req)
                                                  #{"secrettoken"})
-                        {:params {"access_token" "secrettoken"}}))) "find matching token")
+                        {:params {:access_token "secrettoken"}}))) "find matching token")
 
      (is (nil? (:access-token
                      ((wrap-bearer-token (fn [req] req)
                                                  #{"secrettoken"})
-                        { :params {"access_token" "wrongtoken"}}))) "should only return matching token")
+                        { :params {:access_token "wrongtoken"}}))) "should only return matching token")
 
       (is (nil? (:access-token
                      ((wrap-bearer-token (fn [req] req)
@@ -126,7 +126,7 @@
      (is (= 403 (:status
                      ((require-user-session! (fn [req] {:status 200} )
                                                  #{"secrettoken"})
-                        {:params {"access_token" "secrettoken"}}))) "Disallow from params"))
+                        {:params {:access_token "secrettoken"}}))) "Disallow from params"))
 
 
 
@@ -169,11 +169,11 @@
             (is (= 200 (:status
                         (handler {  :request-method :post 
                                     :session {:csrf-token "secrettoken"} 
-                                    :params {"csrf-token" "secrettoken"} }))))
+                                    :params  {:csrf-token "secrettoken"} }))))
             (is (= 403 (:status
                         (handler {  :request-method :post 
                                     :session {:csrf-token "secrettoken"} 
-                                    :params {"csrf-token" "badtoken"} }))))
+                                    :params  {:csrf-token "badtoken"} }))))
             (is (= 403 (:status
                         (handler {  :request-method :post 
                                     :session {csrf-token "secrettoken"}}))))

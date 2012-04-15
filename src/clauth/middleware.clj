@@ -1,6 +1,6 @@
 (ns clauth.middleware
-  (:use [clauth.token])
-  (:use [ring.util.response :only [redirect]]))
+  (:use [clauth.token]
+        [ring.util.response :only [redirect]]))
 
 (defn wrap-bearer-token
   "Wrap request with a OAuth2 bearer token as defined in http://tools.ietf.org/html/draft-ietf-oauth-v2-bearer-08.
@@ -24,6 +24,7 @@
       (let [auth ((:headers req {}) "authorization")
             token (or (last
                     (re-find #"^Bearer (.*)$" (str auth)))
+                    ((:params req {}) :access_token)
                     ((:params req {}) "access_token")
                     ((:session req {}) :access_token)
                     (((:cookies req {}) "access_token" {}) :value )
@@ -88,7 +89,7 @@
             session (req :session)]
         (if (or 
               (= (:request-method req) :get)
-              (= token ((req :params {}) "csrf-token")))
+              (= token ((req :params {}) :csrf-token)))
           (let [response (app req)
                 session (assoc (response :session (req :session)) :csrf-token token)]
             (assoc response :session session))

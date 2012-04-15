@@ -1,12 +1,11 @@
 (ns clauth.test.store.redis
-  (:use [clauth.store])
-  (:use [clauth.token])
-  (:use [clauth.client])
-  (:use [clauth.user])
-  (:use [clauth.store.redis])
   (:require [redis.core :as redis])
-  (:use [clojure.test])
-  )
+  (:use [clauth.store]
+        [clauth.token]
+        [clauth.client]
+        [clauth.user]
+        [clauth.store.redis]
+        [clojure.test]))
 
 
   (deftest redis-store-implementaiton

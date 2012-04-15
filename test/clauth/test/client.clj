@@ -1,6 +1,6 @@
 (ns clauth.test.client
-  (:use [clauth.client])
-  (:use [clojure.test]))
+  (:use [clauth.client]
+        [clojure.test]))
 
    (deftest client-registration
      (reset-client-store!)

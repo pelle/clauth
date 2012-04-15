@@ -1,12 +1,12 @@
 (ns clauth.endpoints
-  (:use   [clauth.token])
-  (:use   [clauth.client])
-  (:use   [clauth.user])
-  (:use   [clauth.middleware :only [csrf-protect! require-user-session!]])
-  (:use   [clauth.views :only [login-form-handler authorization-form-handler error-page]])
-  (:use   [hiccup.util :only [url-encode]])
-  (:use   [ring.util.response])
-  (:use   [cheshire.core])
+  (:use   [clauth.token]
+          [clauth.client]
+          [clauth.user]
+          [clauth.middleware :only [csrf-protect! require-user-session!]]
+          [clauth.views :only [login-form-handler authorization-form-handler error-page]]
+          [hiccup.util :only [url-encode]]
+          [ring.util.response]
+          [cheshire.core])
   (:import [org.apache.commons.codec.binary Base64]))
 
 
@@ -59,8 +59,8 @@
    If authenticate-client returns a client map it runs success function with the request and the client."
   [req authenticator success]
   (let [ basic (basic-authentication-credentials req)
-         client_id (if basic (first basic) ((req :params ) "client_id"))
-         client_secret (if basic (last basic) ((req :params) "client_secret"))
+         client_id (if basic (first basic) ((req :params ) :client_id))
+         client_secret (if basic (last basic) ((req :params) :client_secret))
          client (authenticator client_id client_secret)]
           (if client 
             (success req client)
@@ -68,7 +68,7 @@
 
 (defn grant-type
   "extract grant type from request"
-  [req _ _] ((req :params) "grant_type"))
+  [req _ _] ((req :params) :grant_type))
 
 (defmulti token-request-handler grant-type)
 
@@ -82,7 +82,7 @@
   (client-authenticated-request 
     req 
     client-authenticator
-    (fn [req client] (if-let [user (user-authenticator ((req :params) "username") ((req :params) "password"))]
+    (fn [req client] (if-let [user (user-authenticator ((req :params) :username) ((req :params) :password))]
                         (respond-with-new-token client client)
                         (error-response "invalid_grant")))))
 
@@ -109,7 +109,7 @@
       (fn [req]
         (if (= :get (req :request-method))
           (login-form req)
-          (if-let [user (user-authenticator ((req :params) "username") ((req :params) "password"))]
+          (if-let [user (user-authenticator ((req :params) :username) ((req :params) :password))]
             (let 
               [ destination ((req :session {}) :return-to "/")
                 session ( dissoc (assoc (req :session) :access_token (:token (create-token client user))) :return-to )
@@ -139,24 +139,24 @@
 
 (defn response-type
   "extract grant type from request"
-  [req] ((req :params) "response_type"))
+  [req] ((req :params) :response_type))
 
 (defn authorization-response
   "Create a proper redirection response depending on response_type"
   [req response_params ]
   (let [ params (req :params)
-         redirect_uri (params "redirect_uri")]
+         redirect_uri (params :redirect_uri)]
     (redirect (str redirect_uri 
-        (if (= (params "response_type") "token")
+        (if (= (params :response_type) "token")
           "#"
           "?")
-        (url-encode (merge response_params (filter val (select-keys (req :params) ["state"]))))
+        (url-encode (merge response_params (filter val (select-keys (req :params) [:state]))))
       ))))
 
 (defn authorization-error-response
   "redirect to client with error code"
   [req error]
-  (if ((req :params) "redirect_uri")
+  (if ((req :params) :redirect_uri)
     (authorization-response req { "error" error })
     (error-page error)))
 
@@ -164,7 +164,7 @@
 
 (defmethod authorization-request-handler "token" [req]
   (let [ params (req :params)
-         client (fetch-client (params "client_id"))
+         client (fetch-client (params :client_id))
          user ( :subject (fetch-token (:access_token (req :session))))
          token (create-token client user)]
     (authorization-response req {:access_token (:token token) :token_type "bearer"})))
@@ -181,9 +181,9 @@
       (csrf-protect!
         (fn [req]
           (let [params (req :params)]
-            (if (and (params "response_type") (params "client_id"))
+            (if (and (params :response_type) (params :client_id))
 
-              (if (= (params "response_type") "token")
+              (if (= (params :response_type) "token")
                 (if (= :get (req :request-method))
                   (authorization-form-handler req)
                   (authorization-request-handler req)

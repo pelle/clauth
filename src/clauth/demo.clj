@@ -1,18 +1,19 @@
 (ns clauth.demo
-  (:use [clauth.middleware])
-  (:use [clauth.endpoints])
-  (:use [clauth.client])
-  (:use [clauth.token])
-  (:use [clauth.store.redis])
   (:require [redis.core :as redis])
-  (:use [ring.adapter.jetty])
-  (:use [ring.middleware.cookies])
-  (:use [ring.middleware.session])
-  (:use [ring.middleware.params])
-  (:use [hiccup.bootstrap.middleware])
-  (:use [hiccup.bootstrap.page])
-  (:use [hiccup.page])
-  (:use [hiccup.element]))
+  (:use [clauth.middleware]
+        [clauth.endpoints]
+        [clauth.client]
+        [clauth.token]
+        [clauth.store.redis]
+        [ring.adapter.jetty]
+        [ring.middleware.cookies]
+        [ring.middleware.session]
+        [ring.middleware.params]
+        [ring.middleware.keyword-params]
+        [hiccup.bootstrap.middleware]
+        [hiccup.bootstrap.page]
+        [hiccup.page]
+        [hiccup.element]))
 
 (defn nav-menu [req]
   (if (logged-in? req)
@@ -104,6 +105,7 @@
       (println "http://127.0.0.1:3000/login")
 
       (run-jetty (-> (routes client)
+                (wrap-keyword-params) 
                 (wrap-params) 
                 (wrap-cookies)
                 (wrap-session)                

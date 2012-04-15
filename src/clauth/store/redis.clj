@@ -1,7 +1,7 @@
 (ns clauth.store.redis
   (:use [clauth.store])
-  (:require [redis.core :as redis])
-  (:require [cheshire.core]))
+  (:require [redis.core :as redis]
+            [cheshire.core]))
 
 
 (defn namespaced-keys 

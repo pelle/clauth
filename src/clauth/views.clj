@@ -1,8 +1,8 @@
 (ns clauth.views
-  (:use ring.util.response)
-  (:use [clauth.middleware :only [csrf-token]])
-  (:use hiccup.core)
-  (:use hiccup.form))
+  (:use [ring.util.response]
+        [clauth.middleware :only [csrf-token]]
+        [hiccup.core]
+        [hiccup.form]))
 
 (defn csrf-field 
   "hidden form field containing csrf-token"

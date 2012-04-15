@@ -1,8 +1,8 @@
 (ns clauth.test.endpoints
-  (:use [clauth.endpoints])
-  (:use [clauth.token])
-  (:use [clojure.test])
-  (:use [hiccup.util])
+  (:use [clauth.endpoints]
+        [clauth.token]
+        [clojure.test]
+        [hiccup.util])
   (:import [org.apache.commons.codec.binary Base64]))
 
     (deftest token-decoration
@@ -32,15 +32,15 @@
 
             (is (= (handler { 
                     :params {
-                        "grant_type" "client_credentials"
-                        "client_id" (:client-id client )
-                        "client_secret" (:client-secret client)}})
+                        :grant_type "client_credentials"
+                        :client_id (:client-id client )
+                        :client_secret (:client-secret client)}})
                 { :status 200
                   :headers {"Content-Type" "application/json"}
                   :body (str "{\"access_token\":\"" ( :token (first (tokens))) "\",\"token_type\":\"bearer\"}") }) "url form encoded client credentials")
 
             (is (= (handler { 
-                    :params { "grant_type" "client_credentials" }
+                    :params { :grant_type "client_credentials" }
                     :headers {"authorization" 
                     (str "Basic " (.encodeAsString (Base64.) (.getBytes (str (:client-id client ) ":" (:client-secret client )))))}})
                 { :status 200
@@ -50,14 +50,14 @@
 
             (is (= (handler { 
                     :params {
-                        "grant_type" "client_credentials"
-                        "client_id"  "bad"
-                        "client_secret" "client"}})
+                        :grant_type "client_credentials"
+                        :client_id  "bad"
+                        :client_secret "client"}})
                 { :status 400
                   :headers {"Content-Type" "application/json"}
                   :body "{\"error\":\"invalid_client\"}"}) "should fail on bad client authentication") 
 
-            (is (= (handler { :params { "grant_type" "client_credentials"}})
+            (is (= (handler { :params { :grant_type "client_credentials"}})
                 { :status 400
                   :headers {"Content-Type" "application/json"}
                   :body "{\"error\":\"invalid_client\"}"}) "should fail with missing client authentication") ))
@@ -72,19 +72,19 @@
 
             (is (= (handler { 
                     :params {
-                        "grant_type" "password"
-                        "username" "john@example.com"
-                        "password" "password"
-                        "client_id" (:client-id client )
-                        "client_secret" (:client-secret client)}})
+                        :grant_type "password"
+                        :username "john@example.com"
+                        :password "password"
+                        :client_id (:client-id client )
+                        :client_secret (:client-secret client)}})
                 { :status 200
                   :headers {"Content-Type" "application/json"}
                   :body (str "{\"access_token\":\"" ( :token (first (tokens))) "\",\"token_type\":\"bearer\"}") }) "url form encoded client credentials")
 
             (is (= (handler { 
-                    :params { "grant_type" "password" 
-                              "username" "john@example.com"
-                              "password" "password"}
+                    :params { :grant_type "password" 
+                              :username "john@example.com"
+                              :password "password"}
                     :headers {"authorization" 
                     (str "Basic " (.encodeAsString (Base64.) (.getBytes (str (:client-id client ) ":" (:client-secret client )))))}})
                 { :status 200
@@ -93,18 +93,18 @@
 
             (is (= (handler { 
                     :params {
-                        "grant_type" "password"
-                        "username" "john@example.com"
-                        "password" "not my password"
-                        "client_id" (:client-id client )
-                        "client_secret" (:client-secret client)}})
+                        :grant_type "password"
+                        :username "john@example.com"
+                        :password "not my password"
+                        :client_id (:client-id client )
+                        :client_secret (:client-secret client)}})
                 { :status 400
                   :headers {"Content-Type" "application/json"}
                   :body "{\"error\":\"invalid_grant\"}"}) "should fail on bad client authentication") 
 
-            (is (= (handler { :params { "grant_type" "password"                        
-                                        "client_id" (:client-id client )
-                                        "client_secret" (:client-secret client)}})
+            (is (= (handler { :params { :grant_type "password"                        
+                                        :client_id (:client-id client )
+                                        :client_secret (:client-secret client)}})
 
                 { :status 400
                   :headers {"Content-Type" "application/json"}
@@ -113,16 +113,16 @@
 
             (is (= (handler { 
                     :params {
-                        "grant_type" "password"
-                        "username" "john@example.com"
-                        "password" "password"
-                        "client_id"  "bad"
-                        "client_secret" "client"}})
+                        :grant_type "password"
+                        :username "john@example.com"
+                        :password "password"
+                        :client_id  "bad"
+                        :client_secret "client"}})
                 { :status 400
                   :headers {"Content-Type" "application/json"}
                   :body "{\"error\":\"invalid_client\"}"}) "should fail on bad client authentication") 
 
-            (is (= (handler { :params { "grant_type" "password"}})
+            (is (= (handler { :params { :grant_type "password"}})
                 { :status 400
                   :headers {"Content-Type" "application/json"}
                   :body "{\"error\":\"invalid_client\"}"}) "should fail with missing client authentication") ))
@@ -138,11 +138,11 @@
                redirect_uri "http://test.com"
                uri "/authorize"
                params {
-                        "response_type" "token"
-                        "client_id" ( :client-id client )
-                        "redirect_uri" redirect_uri
-                        "state" "abcde"
-                        "scope" "calendar"}
+                        :response_type "token"
+                        :client_id ( :client-id client )
+                        :redirect_uri redirect_uri
+                        :state "abcde"
+                        :scope "calendar"}
               query-string (url-encode params)]
 
             (let [ session_token (create-token client user)
@@ -169,7 +169,7 @@
             (let [ session_token (create-token client user)
                    response (handler { 
                     :request-method :get
-                    :params (dissoc params "response_type")
+                    :params (dissoc params :response_type)
                     :uri uri
                     :query-string query-string
                     :session { :access_token ( :token session_token )}})]
@@ -179,7 +179,7 @@
             (let [ session_token (create-token client user)
                    response (handler { 
                     :request-method :get
-                    :params (dissoc params "client_id")
+                    :params (dissoc params :client_id)
                     :uri uri
                     :query-string query-string
                     :session { :access_token ( :token session_token )}})]
@@ -189,7 +189,7 @@
             (let [ session_token (create-token client user)
                    response (handler { 
                     :request-method :get
-                    :params (dissoc params "client_id" "state")
+                    :params (dissoc params :client_id :state)
                     :uri uri
                     :query-string query-string
                     :session { :access_token ( :token session_token )}})]
@@ -199,7 +199,7 @@
             (let [ session_token (create-token client user)
                    response (handler { 
                     :request-method :get
-                    :params (assoc params "response_type" "unsupported")
+                    :params (assoc params :response_type "unsupported")
                     :uri uri
                     :query-string query-string
                     :session { :access_token ( :token session_token )}})]
@@ -208,7 +208,7 @@
 
 
             (let [ session_token (create-token client user)
-                   params (assoc params "csrf-token" "csrftoken")
+                   params (assoc params :csrf-token "csrftoken")
                    response (handler { 
                     :request-method :post
                     :params params 
@@ -232,7 +232,7 @@
         (let [ handler (token-handler)
                client (clauth.client/register-client)]
 
-            (is (= (handler { :params { "grant_type" "telepathy"}})
+            (is (= (handler { :params { :grant_type "telepathy"}})
                 { :status 400
                   :headers {"Content-Type" "application/json"}
                   :body "{\"error\":\"unsupported_grant_type\"}"}) "should fail with unsupported grant type") 
@@ -255,9 +255,9 @@
                     :request-method :post
                     :session {:csrf-token "csrftoken"}
                     :params {
-                        "username" "john@example.com"
-                        "password" "password"
-                        "csrf-token" "csrftoken"}})
+                        :username "john@example.com"
+                        :password "password"
+                        :csrf-token "csrftoken"}})
                    session (response :session)
                    token-string (session :access_token)
                    token (fetch-token token-string)]
@@ -270,9 +270,9 @@
                     :request-method :post
                     :session {:csrf-token "csrftoken" :return-to "/authorization"}
                     :params {
-                        "username" "john@example.com"
-                        "password" "password"
-                        "csrf-token" "csrftoken"}})
+                        :username "john@example.com"
+                        :password "password"
+                        :csrf-token "csrftoken"}})
                    session (response :session)
                    token-string (session :access_token)
                    token (fetch-token token-string)]
@@ -290,9 +290,9 @@
                     :request-method :post
                     :session {:csrf-token "csrftoken"}
                     :params {
-                        "username" "john@example.com"
-                        "password" "wrong"
-                        "csrf-token" "csrftoken"}})]
+                        :username "john@example.com"
+                        :password "wrong"
+                        :csrf-token "csrftoken"}})]
               (is (= (response :body) "login form") "should show login form for wrong password"))))
 
 

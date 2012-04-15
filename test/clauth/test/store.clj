@@ -1,7 +1,7 @@
 (ns clauth.test.store
-  (:use [clauth.store])
-  (:use [clojure.test])
-  )
+  (:use [clauth.store]
+        [clojure.test]))
+  
 
 
   (deftest memory-store-implementaiton

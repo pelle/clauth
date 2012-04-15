@@ -23,7 +23,7 @@ The following bearer tokens are implemented:
 
 Add the following dependency to your `project.clj` file:
 
-    [clauth "1.0.0-beta2"]
+    [clauth "1.0.0-beta3"]
 
 ## Usage
 

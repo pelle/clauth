@@ -1,8 +1,8 @@
 (ns clauth.token
     (:use [clauth.store])
-    (:require [crypto.random])
-    (:require [clj-time.core :as time])    
-    (:require [cheshire.core]))
+    (:require [crypto.random]
+              [clj-time.core :as time]
+              [cheshire.core]))
 
 (defprotocol Expirable
   "Check if object is valid"
