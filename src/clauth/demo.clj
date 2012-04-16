@@ -1,5 +1,4 @@
 (ns clauth.demo
-  (:require [redis.core :as redis])
   (:use [clauth.middleware]
         [clauth.endpoints]
         [clauth.client]
@@ -66,14 +65,6 @@
       "/logout" (logout-handler req )
       ((require-bearer-token! handler) req)))))
 
-(defn wrap-redis-store [app]
-  (fn [req]
-    (redis/with-server
-     {:host "127.0.0.1"
-      :port 6379
-      :db 14
-     }
-     (app req))))
 
 (defn -main 
   "start web server. This first wraps the request in the cookies and params middleware, then requires a bearer token.
@@ -87,11 +78,7 @@
     (reset! token-store (create-redis-store "tokens"))
     (reset! client-store (create-redis-store "clients"))
     (reset! user-store (create-redis-store "users"))
-    (redis/with-server
-     {:host "127.0.0.1"
-      :port 6379
-      :db 14
-     }
+    (with-redis
     (let [client ( or (first (clients)) (register-client "Clauth Demo" "http://pelle.github.com/clauth"))
           user ( or (first (clauth.user/users)) (clauth.user/register-user "demo" "password"))] 
       (println "App starting up:")
@@ -111,5 +98,5 @@
                 (wrap-params) 
                 (wrap-cookies)
                 (wrap-session)                
-                (wrap-redis-store)
+                (wrap-redis)
                 (wrap-bootstrap-resources)) {:port 3000})))))
