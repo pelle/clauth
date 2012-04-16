@@ -2,7 +2,8 @@
   (:use [ring.util.response]
         [clauth.middleware :only [csrf-token]]
         [hiccup.core]
-        [hiccup.form]))
+        [hiccup.form]
+        [clauth.client :only [fetch-client]]))
 
 (defn csrf-field 
   "hidden form field containing csrf-token"
@@ -38,13 +39,15 @@
 
 (defn authorization-form 
   ([req]
-    (html
-      (form-to [:post (req :uri)]
-        (csrf-field req)
-        (include-hidden-params req ["client_id" "response_type" "redirect_uri" "scope" "state"])
-        [:div {:class "form-actions"}
-          [:button {:type "submit" :class "btn btn-primary"} "Authorize"]
-          [:a {:class "btn" :href (or ((req :params) "redirect_uri") "/")} "Cancel"]]))))
+    (let [client (fetch-client ((req :params) :client_id))]
+      (html
+        (form-to [:post (req :uri)]
+          (csrf-field req)
+          (include-hidden-params req ["client_id" "response_type" "redirect_uri" "scope" "state"])
+          [:h2 (:name client) " requested authorization"]
+          [:div {:class "form-actions"}
+            [:button {:type "submit" :class "btn btn-primary"} "Authorize"]
+            [:a {:class "btn" :href (or ((req :params) "redirect_uri") "/")} "Cancel"]])))))
 
 (defn authorization-form-handler
   "Login form ring handler"

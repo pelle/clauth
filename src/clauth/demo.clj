@@ -92,7 +92,7 @@
       :port 6379
       :db 14
      }
-    (let [client ( or (first (clients)) (register-client))
+    (let [client ( or (first (clients)) (register-client "Clauth Demo" "http://pelle.github.com/clauth"))
           user ( or (first (clauth.user/users)) (clauth.user/register-user "demo" "password"))] 
       (println "App starting up:")
       (prn client)
