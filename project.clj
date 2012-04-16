@@ -15,4 +15,7 @@
                      [lein-marginalia "0.7.0"]
                      [org.clojars.tavisrudd/redis-clojure "1.3.1"]
                      [hiccup-bootstrap "0.1.0"]]
-  :main clauth.demo)
+  :clean-non-project-classes true
+
+  :main ^{:skip-aot true} clauth.demo)
+ 
