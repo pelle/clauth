@@ -4,6 +4,7 @@
         [clauth.endpoints]
         [clauth.client]
         [clauth.token]
+        [clauth.user]
         [clauth.store.redis]
         [ring.adapter.jetty]
         [ring.middleware.cookies]
@@ -85,6 +86,7 @@
 
     (reset! token-store (create-redis-store "tokens"))
     (reset! client-store (create-redis-store "clients"))
+    (reset! user-store (create-redis-store "users"))
     (redis/with-server
      {:host "127.0.0.1"
       :port 6379
