@@ -165,6 +165,14 @@ The goal is to implement the full [OAuth2 spec](http://tools.ietf.org/html/draft
 * [Authorization Code Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.1)
 * [Refresh Tokens](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-1.5)
 
+## Contribute
+
+You will need to have a Redis database running in the background in order to have some of the tests pass, otherwise, you will get an error about the connection being refused.
+
+If you have Homebrew on Mac OSX, you can get Redis by typing ```brew install redis``` in the command line. Once that's done, get the Redis database started in your Terminal window by typing the following:
+
+    redis-server /usr/local/etc/redis.conf
+
 ## License
 
 Copyright (C) 2012 Pelle Braendgaard http://stakeventures.com
