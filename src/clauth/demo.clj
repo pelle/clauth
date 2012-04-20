@@ -73,30 +73,32 @@
 
   You could instead use a hash for a simple in memory token database or a function querying a database."
   []
-   (do 
+  (try
+    (do
+      (reset! token-store (create-redis-store "tokens"))
+      (reset! client-store (create-redis-store "clients"))
+      (reset! user-store (create-redis-store "users"))
+      (with-redis
+      (let [client ( or (first (clients)) (register-client "Clauth Demo" "http://pelle.github.com/clauth"))
+              user ( or (first (clauth.user/users)) (clauth.user/register-user "demo" "password"))]
+        (println "App starting up:")
+        (prn client)
+        (println "Token endpoint /token")
+        (println)
+        (println "Fetch a Client Credentialed access token:")
+        (println)
+        (println "curl http://127.0.0.1:3000/token -d grant_type=client_credentials -u " (clojure.string/join ":" [(:client-id client) (:client-secret client)]) )
+        (println)
+        (println "Interactive login with demo/password")
+        (println)
+        (println "http://127.0.0.1:3000/login")
 
-    (reset! token-store (create-redis-store "tokens"))
-    (reset! client-store (create-redis-store "clients"))
-    (reset! user-store (create-redis-store "users"))
-    (with-redis
-    (let [client ( or (first (clients)) (register-client "Clauth Demo" "http://pelle.github.com/clauth"))
-          user ( or (first (clauth.user/users)) (clauth.user/register-user "demo" "password"))] 
-      (println "App starting up:")
-      (prn client)
-      (println "Token endpoint /token")
-      (println)
-      (println "Fetch a Client Credentialed access token:")
-      (println)
-      (println "curl http://127.0.0.1:3000/token -d grant_type=client_credentials -u " (clojure.string/join ":" [(:client-id client) (:client-secret client)]) )
-      (println)
-      (println "Interactive login with demo/password")
-      (println)
-      (println "http://127.0.0.1:3000/login")
-
-      (run-jetty (-> (routes client)
-                (wrap-keyword-params) 
-                (wrap-params) 
-                (wrap-cookies)
-                (wrap-session)                
-                (wrap-redis)
-                (wrap-bootstrap-resources)) {:port 3000})))))
+        (run-jetty (-> (routes client)
+                     (wrap-keyword-params) 
+                     (wrap-params) 
+                     (wrap-cookies)
+                     (wrap-session)                
+                     (wrap-redis)
+                     (wrap-bootstrap-resources)) {:port 3000}))))
+      (catch java.net.ConnectException e
+        (println "You don't have a Redis database running in the background:" (.getMessage e)))))
