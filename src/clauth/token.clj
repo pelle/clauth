@@ -2,6 +2,7 @@
     (:use [clauth.store])
     (:require [crypto.random]
               [clj-time.core :as time]
+              [clj-time.coerce]
               [cheshire.core]))
 
 (defprotocol Expirable
@@ -10,7 +11,7 @@
 
 (extend-protocol Expirable clojure.lang.IPersistentMap 
   (is-valid? [t] (if-let [expiry (:expires t)]
-                          (time/after? expiry (time/now) )
+                          (time/after? (clj-time.coerce/to-date-time expiry) (time/now) )
                           true)))
 
 (extend-protocol Expirable nil 
