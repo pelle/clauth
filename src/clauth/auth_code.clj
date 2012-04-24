@@ -3,6 +3,7 @@
           [clauth.token])
     (:require [crypto.random]
               [clj-time.core :as time]
+              [clj-time.coerce]
               [cheshire.core]))
 
 
@@ -28,13 +29,13 @@
       (instance? java.lang.String attrs) (oauth-code (cheshire.core/parse-string attrs true))
       :default (OAuthCode. (attrs :code) (attrs :client) (attrs :subject) (attrs :expires) (attrs :scope) (attrs :object))))
   ([client subject]
-    (oauth-code client subject nil nil nil)
+    (oauth-code client subject nil nil)
     )
-  ([client subject expires scope object]
-    (oauth-code (generate-token) client subject expires scope object)
+  ([client subject scope object]
+    (oauth-code (generate-token) client subject scope object)
     )
-  ([code client subject expires scope object]
-    (OAuthCode. code client subject expires scope object)
+  ([code client subject scope object]
+    (OAuthCode. code client subject (clj-time.coerce/to-date (time/plus (time/now) (time/days 1))) scope object)
     )
   )
 
@@ -50,6 +51,11 @@
   [t]
   (oauth-code (fetch @auth-code-store t)))
 
+(defn revoke-auth-code!
+  "Revoke the auth code so it can no longer be used"
+  [code]
+  (revoke! @auth-code-store (:code code)))
+
 (defn store-auth-code
   "Store the given OAuthCode and return it."
   [t]
@@ -64,8 +70,8 @@
   "create a unique auth-code and store it in the auth-code store"
   ([client subject]
     (create-auth-code (oauth-code client subject)))
-  ([client subject expires scope object]
-    (create-auth-code (oauth-code client subject expires scope object)))
+  ([client subject scope object]
+    (create-auth-code (oauth-code client subject scope object)))
   ([ auth-code ]
     (store-auth-code auth-code)
     ))

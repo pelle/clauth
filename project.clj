@@ -1,4 +1,4 @@
-(defproject clauth "1.0.0-beta4"
+(defproject clauth "1.0.0-rc1"
   :description "OAuth2 based authentication library for Ring"
   :url "http://github.com/pelle/clauth"
 
@@ -15,7 +15,5 @@
                      [lein-marginalia "0.7.0"]
                      [org.clojars.tavisrudd/redis-clojure "1.3.1"]
                      [hiccup-bootstrap "0.1.0"]]
-  :clean-non-project-classes true
-
-  :main ^{:skip-aot true} clauth.demo)
+  :clean-non-project-classes true )
  

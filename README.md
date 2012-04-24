@@ -6,9 +6,7 @@ This is a simple OAuth 2 provider that is designed to be used as a primary authe
 
 It is under development by a Clojure novice. Please help give feedback on use of idiomatic clojure.
 
-It currently only handles OAuth2 bearer authentication and interactive authentication. 
-
-The full OAuth 2 token authorization flow will be added shortly as everything else is now more or less working.
+It currently handles OAuth2 bearer authentication and interactive authentication. 
 
 See [draft-ietf-oauth-v2-bearer](http://tools.ietf.org/html/draft-ietf-oauth-v2-bearer-08)
 
@@ -18,12 +16,13 @@ The following bearer tokens are implemented:
 * [Form encoded body parameter](http://tools.ietf.org/html/draft-ietf-oauth-v2-bearer-08#section-2.2)
 * [URI query field](http://tools.ietf.org/html/draft-ietf-oauth-v2-bearer-08#section-2.3)
 * Non standard http cookie ('access_token') for use in interactive applications
+* Non standard session ('access_token') for use in interactive applications
 
 ## Install
 
 Add the following dependency to your `project.clj` file:
 
-    [clauth "1.0.0-beta4"]
+    [clauth "1.0.0-rc1"]
 
 ## Usage
 
@@ -42,6 +41,7 @@ The difference between wrap-bearer-token and require-bearer-token! is that wrap 
 
 Currently the following Grant types are supported:
 
+* [Authorization Code Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.1)
 * [Client Credential Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.4)
 * [Resource Owner Password Credential Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.3)
 
@@ -53,6 +53,7 @@ Grant types are implemented using multimethods. To implement one
 
 We currently support the following authorization requests:
 
+* [Authorization Code Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.1)
 * [Implicit Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.2)
 
 ## Tokens
@@ -97,12 +98,14 @@ The stores used by the various parts are defined in an atom for each type. reset
 The following stores are currently defined:
 
 * token-store is in clauth.token/token-store
+* auth-code-store is in clauth.auth-code/auth-code-store
 * client-store is in clauth.client/client-store
 * user-store is in clauth.user/user-store
 
 To use the redis store add the following to your code:
 
     (reset! token-store (create-redis-store "tokens"))
+    (reset! auth-code-store (create-redis-store "auth-codes"))
     (reset! client-store (create-redis-store "clients"))
     (reset! user-store (create-redis-store "users"))
 
@@ -156,13 +159,12 @@ The master-client is a client record representing your own application. A defaul
 
 A mini server demo is available. It creates a client for you and prints out instructions on how to issue tokens with curl.
 
-    lein run
+    lein run -m clauth.demo
 
 ## TODO
 
-The goal is to implement the full [OAuth2 spec](http://tools.ietf.org/html/draft-ietf-oauth-v2-25) in this order:
+The goal is to implement the full [OAuth2 spec](http://tools.ietf.org/html/draft-ietf-oauth-v2-25). The only main feature missing is. I'll aim for that for 1.1 as most people currently don't use refresh tokens:
 
-* [Authorization Code Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.1)
 * [Refresh Tokens](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-1.5)
 
 ## Contribute

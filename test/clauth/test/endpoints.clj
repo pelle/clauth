@@ -101,7 +101,7 @@
                         :client_secret (:client-secret client)}})
                 { :status 400
                   :headers {"Content-Type" "application/json"}
-                  :body "{\"error\":\"invalid_grant\"}"}) "should fail on bad client authentication") 
+                  :body "{\"error\":\"invalid_grant\"}"}) "should fail on bad user password") 
 
             (is (= (handler { :params { :grant_type "password"                        
                                         :client_id (:client-id client )
@@ -109,7 +109,7 @@
 
                 { :status 400
                   :headers {"Content-Type" "application/json"}
-                  :body "{\"error\":\"invalid_grant\"}"}) "should fail with missing client authentication") 
+                  :body "{\"error\":\"invalid_grant\"}"}) "should fail with missing user authentication") 
 
 
             (is (= (handler { 
@@ -127,6 +127,94 @@
                 { :status 400
                   :headers {"Content-Type" "application/json"}
                   :body "{\"error\":\"invalid_client\"}"}) "should fail with missing client authentication") ))
+
+    (deftest requesting-authorization-code-token
+        (reset-token-store!)
+        (reset-auth-code-store!)
+        (clauth.client/reset-client-store!)
+        (clauth.user/reset-user-store!)
+        (let [ handler (token-handler)
+               client (clauth.client/register-client)
+               user   (clauth.user/register-user "john@example.com" "password")
+               scope "calendar"
+               object {:id "stuff"}
+               ]
+            (let [ code   (create-auth-code client user "calendar" object)]
+              (is (= (handler { 
+                      :params {
+                          :grant_type "authorization_code"
+                          :code (:code code)
+                          :client_id (:client-id client )
+                          :client_secret (:client-secret client)}})
+                  { :status 200
+                    :headers {"Content-Type" "application/json"}
+                    :body (str "{\"access_token\":\"" ( :token (first (tokens))) "\",\"token_type\":\"bearer\"}") }) 
+                "url form encoded client credentials" ))
+
+            (let [ code   (create-auth-code client user "calendar" object)]
+              (is (= (handler { 
+                      :params { 
+                          :grant_type "authorization_code"
+                          :code (:code code)
+                      }
+                      :headers { "authorization" 
+                        (str "Basic " (.encodeAsString (Base64.) (.getBytes (str (:client-id client ) ":" (:client-secret client )))))}})
+                  { :status 200
+                    :headers {"Content-Type" "application/json"}
+                    :body (str "{\"access_token\":\"" (:token (first (tokens)) ) "\",\"token_type\":\"bearer\"}") }) 
+                "basic authenticated client credentials"))
+
+            (let [ code   (create-auth-code client user "calendar" object)]
+              (is (= (handler { 
+                    :params {
+                        :grant_type "authorization_code"
+                        :code (:code code)
+                        :client_id (:client-id client )
+                        :client_secret "bad"}})
+                { :status 400
+                  :headers {"Content-Type" "application/json"}
+                  :body "{\"error\":\"invalid_client\"}"}) 
+              "should fail on bad client authentication"))
+
+            (let [ code   (create-auth-code client user "calendar" object)
+                   other (clauth.client/register-client)]
+              (is (= (handler { 
+                    :params {
+                        :grant_type "authorization_code"
+                        :code (:code code)
+                        :client_id (:client-id other )
+                        :client_secret (:client-secret other)}})
+                { :status 400
+                  :headers {"Content-Type" "application/json"}
+                  :body "{\"error\":\"invalid_grant\"}"}) 
+              "should fail for other client"))
+
+            (is (= (handler { :params { 
+                                :grant_type "authorization_code"
+                                :client_id (:client-id client )
+                                :client_secret (:client-secret client)}})
+
+                { :status 400
+                  :headers {"Content-Type" "application/json"}
+                  :body "{\"error\":\"invalid_grant\"}"}) 
+              "should fail with missing code") 
+
+            (let [ code   (create-auth-code client user "calendar" object)]
+              (is (= (handler { 
+                      :params {
+                          :grant_type "authorization_code"
+                          :code (:code code)
+                          :client_id  "bad"
+                          :client_secret "client"}})
+                  { :status 400
+                    :headers {"Content-Type" "application/json"}
+                    :body "{\"error\":\"invalid_client\"}"}) "should fail on bad client authentication"))
+
+            (let [ code   (create-auth-code client user "calendar" object)]
+              (is (= (handler { :params { :grant_type "authorization_code" :code (:code code) }})
+                { :status 400
+                  :headers {"Content-Type" "application/json"}
+                  :body "{\"error\":\"invalid_client\"}"}) "should fail with missing client authentication") )))
 
     (deftest requesting-authorization-code
         (reset-token-store!)

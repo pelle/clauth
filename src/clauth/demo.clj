@@ -4,6 +4,7 @@
         [clauth.client]
         [clauth.token]
         [clauth.user]
+        [clauth.auth-code]
         [clauth.store.redis]
         [ring.adapter.jetty]
         [ring.middleware.cookies]
@@ -76,6 +77,7 @@
   (try
     (do
       (reset! token-store (create-redis-store "tokens"))
+      (reset! auth-code-store (create-redis-store "autho-codes"))
       (reset! client-store (create-redis-store "clients"))
       (reset! user-store (create-redis-store "users"))
       (with-redis

@@ -78,6 +78,8 @@
   "create a unique token and store it in the token store"
   ([client subject]
     (create-token (oauth-token client subject)))
+  ([client subject scope object]
+    (create-token client subject nil scope object))
   ([client subject expires scope object]
     (create-token (oauth-token client subject expires scope object)))
   ([ token ]

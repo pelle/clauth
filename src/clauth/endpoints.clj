@@ -79,6 +79,20 @@
     client-authenticator
     (fn [req client] (respond-with-new-token client client))))
 
+(defmethod token-request-handler "authorization_code" [req client-authenticator _]
+  (client-authenticated-request 
+    req 
+    client-authenticator
+    (fn [req client] 
+      (if-let [code (fetch-auth-code ((req :params) :code))]
+        (if (= (:client-id client) (:client-id (:client code)))
+          (let [ _ (revoke-auth-code! code)                  
+                 token (create-token client (:subject code) (:scope code) (:object code))]
+             (token-response token))
+          (error-response "invalid_grant"))
+        (error-response "invalid_grant")))))
+      
+
 (defmethod token-request-handler "password" [req client-authenticator user-authenticator]
   (client-authenticated-request 
     req 

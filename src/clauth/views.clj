@@ -17,7 +17,7 @@
     (filter val (select-keys params fields))))
 
 (defn login-form 
-  ([req] (login-form req (req :uri) ((req :params) "username") ((req :params) "password")))
+  ([req] (login-form req (req :uri) ((req :params) :username) ((req :params) :password)))
   ([req uri username password]
     (html
       (form-to [:post (req :uri)]
@@ -43,7 +43,7 @@
       (html
         (form-to [:post (req :uri)]
           (csrf-field req)
-          (include-hidden-params req ["client_id" "response_type" "redirect_uri" "scope" "state"])
+          (include-hidden-params req [:client_id :response_type :redirect_uri :scope :state])
           [:h2 (:name client) " requested authorization"]
           [:div {:class "form-actions"}
             [:button {:type "submit" :class "btn btn-primary"} "Authorize"]
