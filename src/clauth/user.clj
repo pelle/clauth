@@ -43,7 +43,7 @@
 (defn store-user
   "Store the given User and return it."
   [t]
-  (store @user-store :login t))
+  (store! @user-store :login t))
 
 (defn users
   "Sequence of users"

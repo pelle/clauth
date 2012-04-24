@@ -53,7 +53,7 @@
 (defn store-auth-code
   "Store the given OAuthCode and return it."
   [t]
-  (store @auth-code-store :code t))
+  (store! @auth-code-store :code t))
 
 (defn auth-codes
   "Sequence of auth-codes"

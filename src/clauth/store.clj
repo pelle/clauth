@@ -1,16 +1,18 @@
 (ns clauth.store)
 
 (defprotocol Store
-  "Store OAuthTokens"
+  "Store objects"
   (fetch [ e k ] "Find the item based on a key.")
-  (store [ e key_param item ] "Store the given map using the value of the keyword key_param and return it.")
+  (revoke! [ e k ] "Invalidate or remove the item based on a key")
+  (store! [ e key_param item ] "Store the given map using the value of the keyword key_param and return it.")
   (entries [e] "sequence of entries")
   (reset-store! [e] "clear all entries"))
 
 (defrecord MemoryStore [data] 
   Store 
   (fetch [this t] (@data t))
-  (store [this key_param item]
+  (revoke! [this t] (swap! data dissoc t))
+  (store! [this key_param item]
     (do
       (swap! data assoc (key_param item) item)
       item)

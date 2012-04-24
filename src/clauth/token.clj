@@ -67,7 +67,7 @@
 (defn store-token
   "Store the given OAuthToken and return it."
   [t]
-  (store @token-store :token t))
+  (store! @token-store :token t))
 
 (defn tokens
   "Sequence of tokens"

@@ -20,8 +20,8 @@
   Store 
   (fetch [this t] (if-let [j (redis/get (str namespace "/" t))]
                           (cheshire.core/parse-string j true)))
-                            
-  (store [this key_param item]
+  (revoke! [this t] (redis/del (str namespace "/" t)))       
+  (store! [this key_param item]
     (do
       (redis/set (str namespace "/" (key_param item)) (cheshire.core/generate-string item))
       item)

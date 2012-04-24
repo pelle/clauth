@@ -32,7 +32,7 @@
 (defn store-client
   "Store the given ClientApplication and return it."
   [t]
-  (store @client-store :client-id t))
+  (store! @client-store :client-id t))
 
 (defn clients
   "Sequence of clients"
