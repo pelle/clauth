@@ -1,6 +1,7 @@
 (ns clauth.test.endpoints
   (:use [clauth.endpoints]
         [clauth.token]
+        [clauth.auth-code]
         [clojure.test]
         [hiccup.util])
   (:import [org.apache.commons.codec.binary Base64]))
@@ -127,6 +128,104 @@
                   :headers {"Content-Type" "application/json"}
                   :body "{\"error\":\"invalid_client\"}"}) "should fail with missing client authentication") ))
 
+    (deftest requesting-authorization-code
+        (reset-token-store!)
+        (reset-auth-code-store!)
+        (clauth.client/reset-client-store!)
+        (clauth.user/reset-user-store!)
+        (let [ handler (authorization-handler)
+               client (clauth.client/register-client)
+               user   (clauth.user/register-user "john@example.com" "password")
+               redirect_uri "http://test.com"
+               uri "/authorize"
+               params {
+                        :response_type "code"
+                        :client_id ( :client-id client )
+                        :redirect_uri redirect_uri
+                        :state "abcde"
+                        :scope "calendar"}
+              query-string (url-encode params)]
+
+            (let [ session_token (create-token client user)
+                   response (handler { 
+                    :request-method :get
+                    :params params 
+                    :uri uri
+                    :query-string query-string
+                    :session { :access_token ( :token session_token )}})]
+              (is (= (response :status) 200)))
+
+            (let [ response (handler { 
+                    :request-method :get
+                    :uri uri
+                    :query-string query-string
+                    :headers {"accept" "text/html"}
+                    :params params })
+                   session (response :session)]
+                          (is (= (response :status) 302))
+                          (is (= (session :return-to) 
+                            (str uri "?" query-string)))
+                          (is (= (response :headers) {"Location" "/login"})))
+            ;; Missing parameters
+            (let [ session_token (create-token client user)
+                   response (handler { 
+                    :request-method :get
+                    :params (dissoc params :response_type)
+                    :uri uri
+                    :query-string query-string
+                    :session { :access_token ( :token session_token )}})]
+              (is (= (response :status) 302))
+              (is (= (response :headers) { "Location" "http://test.com?state=abcde&error=invalid_request" })))
+            
+            (let [ session_token (create-token client user)
+                   response (handler { 
+                    :request-method :get
+                    :params (dissoc params :client_id)
+                    :uri uri
+                    :query-string query-string
+                    :session { :access_token ( :token session_token )}})]
+              (is (= (response :status) 302))
+              (is (= (response :headers) { "Location" "http://test.com?state=abcde&error=invalid_request" }) "should redirect with error in query"))
+
+            (let [ session_token (create-token client user)
+                   response (handler { 
+                    :request-method :get
+                    :params (dissoc params :client_id :state)
+                    :uri uri
+                    :query-string query-string
+                    :session { :access_token ( :token session_token )}})]
+              (is (= (response :status) 302))
+              (is (= (response :headers) { "Location" "http://test.com?error=invalid_request" }) "should redirect with error in query"))
+
+            (let [ session_token (create-token client user)
+                   response (handler { 
+                    :request-method :get
+                    :params (assoc params :response_type "unsupported")
+                    :uri uri
+                    :query-string query-string
+                    :session { :access_token ( :token session_token )}})]
+              (is (= (response :status) 302))
+              (is (= (response :headers) { "Location" "http://test.com?state=abcde&error=unsupported_response_type" }) "should return error on unsupported response type"))
+
+
+            (let [ session_token (create-token client user)
+                   params (assoc params :csrf-token "csrftoken")
+                   response (handler { 
+                    :request-method :post
+                    :params params 
+                    :uri uri
+                    :query-string query-string
+                    :session { 
+                      :access_token ( :token session_token )
+                      :csrf-token "csrftoken" }})
+                   redirect_uri ((response :headers) "Location")
+                   code_string (last (re-find #"code=([^&]+)" redirect_uri))
+                   auth-code (fetch-auth-code code_string)]
+              (is (= (response :status) 302))
+              (is (= redirect_uri (str "http://test.com?state=abcde&code=" code_string )) "should redirect with proper format")
+              (is (= (:client auth-code) client) "should properly set client")
+              (is (= (:subject auth-code) user) "should properly set subject")
+            )))
 
     (deftest requesting-implicit-authorization
         (reset-token-store!)

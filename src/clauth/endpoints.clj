@@ -2,6 +2,7 @@
   (:use   [clauth.token]
           [clauth.client]
           [clauth.user]
+          [clauth.auth-code]
           [clauth.middleware :only [csrf-protect! require-user-session!]]
           [clauth.views :only [login-form-handler authorization-form-handler error-page]]
           [hiccup.util :only [url-encode]]
@@ -169,6 +170,13 @@
          token (create-token client user)]
     (authorization-response req {:access_token (:token token) :token_type "bearer"})))
 
+(defmethod authorization-request-handler "code" [req]
+  (let [ params (req :params)
+         client (fetch-client (params :client_id))
+         user ( :subject (fetch-token (:access_token (req :session))))
+         code (create-auth-code client user)]
+    (authorization-response req {:code (:code code)})))
+
 (defmethod authorization-request-handler :default [req]
   (authorization-error-response req "unsupported_grant_type"))
 
@@ -183,7 +191,7 @@
           (let [params (req :params)]
             (if (and (params :response_type) (params :client_id))
 
-              (if (= (params :response_type) "token")
+              (if (some (partial = (params :response_type)) ["code" "token"] )
                 (if (= :get (req :request-method))
                   (authorization-form-handler req)
                   (authorization-request-handler req)
