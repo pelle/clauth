@@ -98,7 +98,7 @@
     req 
     client-authenticator
     (fn [req client] (if-let [user (user-authenticator ((req :params) :username) ((req :params) :password))]
-                        (respond-with-new-token client client)
+                        (respond-with-new-token client user)
                         (error-response "invalid_grant")))))
 
 (defmethod token-request-handler :default [req client-authenticator user-authenticator]
