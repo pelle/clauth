@@ -1,4 +1,4 @@
-(defproject clauth "1.0.0-rc2"
+(defproject clauth "1.0.0-rc3"
   :description "OAuth2 based authentication library for Ring"
   :url "http://github.com/pelle/clauth"
 

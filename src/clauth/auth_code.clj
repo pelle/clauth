@@ -8,7 +8,7 @@
 
 
 (defrecord OAuthCode
-  [code client subject expires scope object])
+  [code client subject redirect-uri expires scope object])
 
 (defn oauth-code
   "The oauth-code defines supports various functions to verify the validity
@@ -18,6 +18,7 @@
   * auth-code - a unique auth-code identifying it
   * client - a map/record of the client app who was issued the auth-code
   * subject - the subject who authorized the auth-code - eg. user
+  * redirect-uri - the redirect-uri passed during authorization
   * expires - Optional time of expiry
   * scope   - An optional vector of scopes authorized
   * object  - An optional object authorized. Eg. account, photo"
@@ -27,15 +28,15 @@
       (nil? attrs) nil
       (instance? OAuthCode attrs) attrs
       (instance? java.lang.String attrs) (oauth-code (cheshire.core/parse-string attrs true))
-      :default (OAuthCode. (attrs :code) (attrs :client) (attrs :subject) (attrs :expires) (attrs :scope) (attrs :object))))
-  ([client subject]
-    (oauth-code client subject nil nil)
+      :default (OAuthCode. (attrs :code) (attrs :client) (attrs :subject) (attrs :redirect-uri) (attrs :expires) (attrs :scope) (attrs :object))))
+  ([client subject redirect-uri]
+    (oauth-code client subject redirect-uri nil nil)
     )
-  ([client subject scope object]
-    (oauth-code (generate-token) client subject scope object)
+  ([client subject redirect-uri scope object]
+    (oauth-code (generate-token) client subject redirect-uri scope object)
     )
-  ([code client subject scope object]
-    (OAuthCode. code client subject (clj-time.coerce/to-date (time/plus (time/now) (time/days 1))) scope object)
+  ([code client subject redirect-uri scope object]
+    (OAuthCode. code client subject redirect-uri (clj-time.coerce/to-date (time/plus (time/now) (time/days 1))) scope object)
     )
   )
 
@@ -68,10 +69,10 @@
 
 (defn create-auth-code 
   "create a unique auth-code and store it in the auth-code store"
-  ([client subject]
-    (create-auth-code (oauth-code client subject)))
-  ([client subject scope object]
-    (create-auth-code (oauth-code client subject scope object)))
+  ([client subject redirect-uri]
+    (create-auth-code (oauth-code client subject redirect-uri)))
+  ([client subject redirect-uri scope object]
+    (create-auth-code (oauth-code client subject redirect-uri scope object)))
   ([ auth-code ]
     (store-auth-code auth-code)
     ))

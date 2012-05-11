@@ -137,13 +137,15 @@
                client (clauth.client/register-client)
                user   (clauth.user/register-user "john@example.com" "password")
                scope "calendar"
+               redirect_uri "http://test.com/redirect_uri"
                object {:id "stuff"}
                ]
-            (let [ code   (create-auth-code client user "calendar" object)]
+            (let [ code   (create-auth-code client user redirect_uri scope object)]
               (is (= (handler { 
                       :params {
                           :grant_type "authorization_code"
                           :code (:code code)
+                          :redirect_uri redirect_uri
                           :client_id (:client-id client )
                           :client_secret (:client-secret client)}})
                   { :status 200
@@ -151,10 +153,11 @@
                     :body (str "{\"access_token\":\"" ( :token (first (tokens))) "\",\"token_type\":\"bearer\"}") }) 
                 "url form encoded client credentials" ))
 
-            (let [ code   (create-auth-code client user "calendar" object)]
+            (let [ code   (create-auth-code client user redirect_uri "calendar" object)]
               (is (= (handler { 
                       :params { 
                           :grant_type "authorization_code"
+                          :redirect_uri redirect_uri
                           :code (:code code)
                       }
                       :headers { "authorization" 
@@ -164,11 +167,12 @@
                     :body (str "{\"access_token\":\"" (:token (first (tokens)) ) "\",\"token_type\":\"bearer\"}") }) 
                 "basic authenticated client credentials"))
 
-            (let [ code   (create-auth-code client user "calendar" object)]
+            (let [ code   (create-auth-code client user redirect_uri "calendar" object)]
               (is (= (handler { 
                     :params {
                         :grant_type "authorization_code"
                         :code (:code code)
+                        :redirect_uri redirect_uri
                         :client_id (:client-id client )
                         :client_secret "bad"}})
                 { :status 400
@@ -176,21 +180,47 @@
                   :body "{\"error\":\"invalid_client\"}"}) 
               "should fail on bad client authentication"))
 
-            (let [ code   (create-auth-code client user "calendar" object)
+            (let [ code   (create-auth-code client user redirect_uri "calendar" object)
                    other (clauth.client/register-client)]
               (is (= (handler { 
                     :params {
                         :grant_type "authorization_code"
                         :code (:code code)
+                        :redirect_uri redirect_uri
                         :client_id (:client-id other )
                         :client_secret (:client-secret other)}})
                 { :status 400
                   :headers {"Content-Type" "application/json"}
                   :body "{\"error\":\"invalid_grant\"}"}) 
-              "should fail for other client"))
+              "should fail for other client")
+
+
+              (is (= (handler { :params { 
+                                  :grant_type "authorization_code"
+                                  :code (:code code)
+                                  :client_id (:client-id client )
+                                  :client_secret (:client-secret client)}})
+
+                  { :status 400
+                    :headers {"Content-Type" "application/json"}
+                    :body "{\"error\":\"invalid_grant\"}"}) 
+                "should fail with missing redirect_uri") 
+
+              (is (= (handler { :params { 
+                                  :grant_type "authorization_code"
+                                  :code (:code code)
+                                  :redirect_uri "http://badsite.com"
+                                  :client_id (:client-id client )
+                                  :client_secret (:client-secret client)}})
+
+                  { :status 400
+                    :headers {"Content-Type" "application/json"}
+                    :body "{\"error\":\"invalid_grant\"}"}) 
+                "should fail with wrong redirect_uri" ))
 
             (is (= (handler { :params { 
                                 :grant_type "authorization_code"
+                                :redirect_uri redirect_uri
                                 :client_id (:client-id client )
                                 :client_secret (:client-secret client)}})
 
@@ -199,19 +229,23 @@
                   :body "{\"error\":\"invalid_grant\"}"}) 
               "should fail with missing code") 
 
-            (let [ code   (create-auth-code client user "calendar" object)]
+            (let [ code   (create-auth-code client user redirect_uri "calendar" object)]
               (is (= (handler { 
                       :params {
                           :grant_type "authorization_code"
                           :code (:code code)
+                          :redirect_uri redirect_uri
                           :client_id  "bad"
                           :client_secret "client"}})
                   { :status 400
                     :headers {"Content-Type" "application/json"}
                     :body "{\"error\":\"invalid_client\"}"}) "should fail on bad client authentication"))
 
-            (let [ code   (create-auth-code client user "calendar" object)]
-              (is (= (handler { :params { :grant_type "authorization_code" :code (:code code) }})
+            (let [ code   (create-auth-code client user redirect_uri "calendar" object)]
+              (is (= (handler { :params { 
+                                  :grant_type "authorization_code" 
+                                  :code (:code code) 
+                                  :redirect_uri redirect_uri }})
                 { :status 400
                   :headers {"Content-Type" "application/json"}
                   :body "{\"error\":\"invalid_client\"}"}) "should fail with missing client authentication") )))
@@ -306,13 +340,14 @@
                     :session { 
                       :access_token ( :token session_token )
                       :csrf-token "csrftoken" }})
-                   redirect_uri ((response :headers) "Location")
-                   code_string (last (re-find #"code=([^&]+)" redirect_uri))
+                   post_auth_redirect_uri ((response :headers) "Location")
+                   code_string (last (re-find #"code=([^&]+)" post_auth_redirect_uri ))
                    auth-code (fetch-auth-code code_string)]
               (is (= (response :status) 302))
-              (is (= redirect_uri (str "http://test.com?state=abcde&code=" code_string )) "should redirect with proper format")
+              (is (= post_auth_redirect_uri (str "http://test.com?state=abcde&code=" code_string )) "should redirect with proper format")
               (is (= (:client auth-code) client) "should properly set client")
               (is (= (:subject auth-code) user) "should properly set subject")
+              (is (= (:redirect-uri auth-code) redirect_uri) "should properly save redirect_uri")
             )))
 
     (deftest requesting-implicit-authorization

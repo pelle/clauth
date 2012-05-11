@@ -85,7 +85,8 @@
     client-authenticator
     (fn [req client] 
       (if-let [code (fetch-auth-code ((req :params) :code))]
-        (if (= (:client-id client) (:client-id (:client code)))
+        (if (and  (= (:client-id client) (:client-id (:client code)))
+                  (= (:redirect-uri code) ((req :params) :redirect_uri)))
           (let [ _ (revoke-auth-code! code)                  
                  token (create-token client (:subject code) (:scope code) (:object code))]
              (token-response token))
@@ -188,7 +189,7 @@
   (let [ params (req :params)
          client (fetch-client (params :client_id))
          user ( :subject (fetch-token (:access_token (req :session))))
-         code (create-auth-code client user)]
+         code (create-auth-code client user (:redirect_uri params))]
     (authorization-response req {:code (:code code)})))
 
 (defmethod authorization-request-handler :default [req]

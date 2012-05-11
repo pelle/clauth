@@ -6,9 +6,10 @@
 
    (deftest auth-code-records
      (let 
-        [record (oauth-code "my-client" "user")]
+        [record (oauth-code "my-client" "user" "http://test.com/redirect")]
         (is (= "my-client" ( :client record )) "should have client")
-        (is (= "user" ( :subject record )) "should have client")
+        (is (= "user" ( :subject record )) "should have subject")
+        (is (= "http://test.com/redirect" ( :redirect-uri record )) "should have redirect-uri")
         (is (not (nil? (:code record  ))) "should include code field")
         (is (is-valid? record) "should be valid by default")))
 
@@ -16,9 +17,10 @@
      (reset-auth-code-store!)
      (is (= 0 (count (auth-codes))) "starts out empty")
      (let 
-        [record (create-auth-code "my-client" "my-user")]
+        [record (create-auth-code "my-client" "my-user" "http://test.com/redirect")]
         (is (= "my-client" ( :client record )) "should have client")
         (is (= "my-user" ( :subject record )) "should have subject")
+        (is (= "http://test.com/redirect" ( :redirect-uri record )) "should have redirect-uri")
         (is (not (nil? (:code record ))) "should include auth-code field")
         (is (= 1 (count (auth-codes ))) "added one")
         (is (= record (first (auth-codes ))) "added one")
@@ -35,7 +37,7 @@
      (reset-auth-code-store!)
      (is (= 0 (count (auth-codes))) "starts out empty")
      (let 
-        [record (oauth-code "my-client" "my-user")]
+        [record (oauth-code "my-client" "my-user" "http://test.com/redirect")]
         (is (nil? (fetch-auth-code (:code record))))
         (do
           (store-auth-code record)
