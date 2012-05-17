@@ -47,10 +47,11 @@
 
    If not nil."
   [req]
-  (if-let [ basic-token (last (re-find #"^Basic (.*)$" ((req :headers {}) "authorization" ""))) ]
-    (if-let [ credentials (String. (Base64/decodeBase64 basic-token))]
-      (clojure.string/split credentials #":" )
-      )))
+  (if-let [ auth-string ((req :headers {}) "authorization")]
+    (if-let [ basic-token (last (re-find #"^Basic (.*)$" auth-string)) ]
+      (if-let [ credentials (String. (Base64/decodeBase64 basic-token))]
+        (clojure.string/split credentials #":" )
+      ))))
 
 (defn client-authenticated-request 
   "Check that request is authenticated by client either using Basic authentication or url form encoded parameters.
