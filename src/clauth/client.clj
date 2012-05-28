@@ -1,6 +1,7 @@
 (ns clauth.client
     (:use [clauth.token]
-          [clauth.store]))
+          [clauth.store])
+    (:require [cheshire.core]))
 
 
 (defonce client-store (atom (create-memory-store)))

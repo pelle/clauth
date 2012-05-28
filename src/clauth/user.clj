@@ -1,5 +1,6 @@
 (ns clauth.user
     (:use [clauth.store])
+    (:require [cheshire.core])
     (:import [org.mindrot.jbcrypt BCrypt]))
 
 
