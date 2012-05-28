@@ -140,10 +140,21 @@
 
     (deftest request-is-form
         (is (not (is-form? {})))
-        (is (not (is-form? {:content-type "application/json"})))
-        (is (not (is-form? {:content-type "application/xml"})))
-        (is (is-form? {:content-type "application/x-www-form-urlencoded"}))
-        (is (is-form? {:content-type "multipart/form-data"})))
+        (is (not (is-form? {:content-type "application/json" :access-token "abcde" :session {:access_token "abcde"}})))
+        (is (not (is-form? {:content-type "application/xml" :access-token "abcde" :session {:access_token "abcde"}})))
+        (is (is-form? {:content-type "application/x-www-form-urlencoded" :access-token "abcde" :session {:access_token "abcde"}}))
+        (is (is-form? {:content-type "multipart/form-data" :access-token "abcde" :session {:access_token "abcde"}}))
+
+        (is (not (is-form? {:content-type "application/json" })))
+        (is (not (is-form? {:content-type "application/xml" })))
+        (is (is-form? {:content-type "application/x-www-form-urlencoded" }))
+        (is (is-form? {:content-type "multipart/form-data" }))
+
+        (is (not (is-form? {:content-type "application/json" :access-token "abcde" })))
+        (is (not (is-form? {:content-type "application/xml" :access-token "abcde" })))
+        (is (not (is-form? {:content-type "application/x-www-form-urlencoded" :access-token "abcde" })))
+        (is (not (is-form? {:content-type "multipart/form-data" :access-token "abcde" }))))
+        
 
     (deftest request-if-html
         (is (not (if-html {} true false)))
@@ -157,8 +168,8 @@
         (is (not (if-form {} true false)))
         (is (not (if-form {:content-type "application/json"} true false)))
         (is (not (if-form {:content-type "application/xml"} true false)))
-        (is (if-form {:content-type "application/x-www-form-urlencoded"} true false))
-        (is (if-form {:content-type "multipart/form-data"} true false)))
+        (is (if-form {:content-type "application/x-www-form-urlencoded" :access-token "abcde" :session {:access_token "abcde"}} true false))
+        (is (if-form {:content-type "multipart/form-data" :access-token "abcde" :session {:access_token "abcde"}} true false)))
 
     (deftest csrf-token-extraction
         (is (nil? (csrf-token {})))
@@ -171,30 +182,34 @@
 
     (deftest protects-against-csrf
         (let [handler (csrf-protect! (fn [req] req ))]
-            (is (not (nil? (:csrf-token (:session (handler { :request-method :get :content-type "application/x-www-form-urlencoded"} ))))))
+            (is (not (nil? (:csrf-token (:session (handler { :request-method :get :content-type "application/x-www-form-urlencoded" :access-token "abcde" :session {:access_token "abcde"}} ))))))
             (is (= "existing" (:csrf-token (:session (handler { :request-method :get :session {:csrf-token "existing"}}))))))
 
         (let [handler (csrf-protect! (fn [req] {:status 200 } ))]
             (is (= 403 (:status
-                        (handler { :request-method :post :content-type "application/x-www-form-urlencoded"}))) "should fail for html post without token")
+                        (handler { :request-method :post :content-type "application/x-www-form-urlencoded" :access-token "abcde" :session {:access_token "abcde"}}))) "should fail for html post without token")
             
             (is (= 200 (:status
-                        (handler { :request-method :post :content-type "application/json"}))) "should allow non html")
+                        (handler { :request-method :post :content-type "application/json" :access-token "abcde" :session {:access_token "abcde"}}))) "should allow non html")
 
             (is (= 200 (:status
-                        (handler { :request-method :get :content-type "application/x-www-form-urlencoded" }))))
+                        (handler { :request-method :get :content-type "application/x-www-form-urlencoded" :access-token "abcde" :session {:access_token "abcde"} }))))
+
             (is (= 200 (:status
                         (handler {  :request-method :post 
                                     :content-type "application/x-www-form-urlencoded"
-                                    :session {:csrf-token "secrettoken"} 
+                                    :access-token "abcde"
+                                    :session {:csrf-token "secrettoken" :access_token "abcde"} 
                                     :params  {:csrf-token "secrettoken"} }))))
             (is (= 403 (:status
                         (handler {  :request-method :post 
                                     :content-type "application/x-www-form-urlencoded"
-                                    :session {:csrf-token "secrettoken"} 
+                                    :access-token "abcde"
+                                    :session {:csrf-token "secrettoken" :access_token "abcde"} 
                                     :params  {:csrf-token "badtoken"} }))))
             (is (= 403 (:status
                         (handler {  :request-method :post 
                                     :content-type "application/x-www-form-urlencoded"
-                                    :session {csrf-token "secrettoken"}}))))
+                                    :access-token "abcde"
+                                    :session {csrf-token "secrettoken" :access_token "abcde"}}))))
             ))
