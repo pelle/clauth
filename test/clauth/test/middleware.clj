@@ -138,6 +138,12 @@
         (is (is-html? {:headers {"accept" "application/xhtml+xml"}}))
         (is (is-html? {:headers {"accept" "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"}})))
 
+    (deftest request-is-form
+        (is (not (is-form? {})))
+        (is (not (is-form? {:content-type "application/json"})))
+        (is (not (is-form? {:content-type "application/xml"})))
+        (is (is-form? {:content-type "application/x-www-form-urlencoded"}))
+        (is (is-form? {:content-type "multipart/form-data"})))
 
     (deftest request-if-html
         (is (not (if-html {} true false)))
@@ -146,6 +152,13 @@
         (is (if-html {:headers {"accept" "text/html"}} true false))
         (is (if-html {:headers {"accept" "application/xhtml+xml"}} true false))
         (is (if-html {:headers {"accept" "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"}} true false)))
+
+    (deftest request-if-form
+        (is (not (if-form {} true false)))
+        (is (not (if-form {:content-type "application/json"} true false)))
+        (is (not (if-form {:content-type "application/xml"} true false)))
+        (is (if-form {:content-type "application/x-www-form-urlencoded"} true false))
+        (is (if-form {:content-type "multipart/form-data"} true false)))
 
     (deftest csrf-token-extraction
         (is (nil? (csrf-token {})))
@@ -158,23 +171,30 @@
 
     (deftest protects-against-csrf
         (let [handler (csrf-protect! (fn [req] req ))]
-            (is (not (nil? (:csrf-token (:session (handler { :request-method :get }))))))
+            (is (not (nil? (:csrf-token (:session (handler { :request-method :get :content-type "application/x-www-form-urlencoded"} ))))))
             (is (= "existing" (:csrf-token (:session (handler { :request-method :get :session {:csrf-token "existing"}}))))))
 
         (let [handler (csrf-protect! (fn [req] {:status 200 } ))]
             (is (= 403 (:status
-                        (handler { :request-method :post }))))
+                        (handler { :request-method :post :content-type "application/x-www-form-urlencoded"}))) "should fail for html post without token")
+            
             (is (= 200 (:status
-                        (handler { :request-method :get }))))
+                        (handler { :request-method :post :content-type "application/json"}))) "should allow non html")
+
+            (is (= 200 (:status
+                        (handler { :request-method :get :content-type "application/x-www-form-urlencoded" }))))
             (is (= 200 (:status
                         (handler {  :request-method :post 
+                                    :content-type "application/x-www-form-urlencoded"
                                     :session {:csrf-token "secrettoken"} 
                                     :params  {:csrf-token "secrettoken"} }))))
             (is (= 403 (:status
                         (handler {  :request-method :post 
+                                    :content-type "application/x-www-form-urlencoded"
                                     :session {:csrf-token "secrettoken"} 
                                     :params  {:csrf-token "badtoken"} }))))
             (is (= 403 (:status
                         (handler {  :request-method :post 
+                                    :content-type "application/x-www-form-urlencoded"
                                     :session {csrf-token "secrettoken"}}))))
             ))
