@@ -22,7 +22,9 @@ The following bearer tokens are implemented:
 
 Add the following dependency to your `project.clj` file:
 
-    [clauth "1.0.0-rc5"]
+```clojure
+[clauth "1.0.0-rc5"]
+```
 
 ## Usage
 
@@ -47,7 +49,9 @@ Currently the following Grant types are supported:
 
 Grant types are implemented using multimethods. To implement one 
 
-    (defmethod token-request-handler "my_grant_type" [req authenticator] ...)
+```clojure
+(defmethod token-request-handler "my_grant_type" [req authenticator] ...)
+```
 
 ## Authorization request
 
@@ -60,19 +64,25 @@ We currently support the following authorization requests:
 
 There is a protocol defined called Expirable which implements one function:
 
-    (is-valid? token)
+```clojure
+(is-valid? token)
+```
 
 This is implementend by IPersistentMap so {} represents a valid token where {:expires (date-time 2011)} is invalid.
 
 A OAuthToken record exists which can be instantiated and stored easily by the create-token function:
 
-    (create-token client user)
+```clojure
+(create-token client user)
+```
 
 ## Client Applications
 
 A ClientApplication record exists which can be instantiated and stored easily by the register-app function:
 
-    (register-app name url)
+```clojure
+(register-app name url)
+```
 
 A client application has a client-id and a client-secret which is used for issuing tokens.
 
@@ -80,8 +90,9 @@ A client application has a client-id and a client-secret which is used for issui
 
 A User record exists which can be instantiated and stored easily by the register-user function:
 
-    (register-user login password name url)
-
+```clojure
+(register-user login password name url)
+```
 
 ## Stores
 
@@ -104,30 +115,46 @@ The following stores are currently defined:
 
 To use the redis store add the following to your code:
 
-    (reset! token-store (create-redis-store "tokens"))
-    (reset! auth-code-store (create-redis-store "auth-codes"))
-    (reset! client-store (create-redis-store "clients"))
-    (reset! user-store (create-redis-store "users"))
+```clojure
+(reset! token-store (create-redis-store "tokens"))
+(reset! auth-code-store (create-redis-store "auth-codes"))
+(reset! client-store (create-redis-store "clients"))
+(reset! user-store (create-redis-store "users"))
+```
 
 And wrap your handler with a redis connection middleware similar to this: 
 
-    (defn wrap-redis-store [app]
-      (fn [req]
-        (redis/with-server
-         {:host "127.0.0.1"
-          :port 6379
-          :db 14
-         }
-         (app req))))
+```clojure
+(defn wrap-redis-store [app]
+  (fn [req]
+    (redis/with-server
+     {:host "127.0.0.1"
+      :port 6379
+      :db 14
+     }
+     (app req))))
+```
 
 ## Issuing OAuth Tokens
 
 There is currently a single token-handler that provides token issuance called token-handler. Install it in your routes by convention at "/token" or "/oauth/token". 
 
-    (defn routes [req]
-      (case (req :uri)
-        "/token" ((token-handler) req )
-        ((require-bearer-token! handler) req)))
+```clojure
+(defn routes [req]
+  (case (req :uri)
+    "/token" ((token-handler) req )
+    ((require-bearer-token! handler) req)))
+```
+
+Token handler comes with defaults that use the various built in token, user etc. stores. You can override these by passing in a configuration map containing functions.
+
+```clojure
+(token-handler {:client-authenticator clauth.client/authenticate-client 
+                :user-authenticator clauth.user/authenticate-user
+                :token-creator clauth.token/create-token
+                :auth-code-revoker clauth.auth-code/revoke-auth-code! 
+                :auth-code-lookup clauth.auth-code/fetch-auth-code })
+```
 
 ## Using as primary user authentication on server
 
@@ -141,25 +168,31 @@ Why is this a good idea?
 
 To use this make sure to wrap the session middleware. We have a login handler endpoint that could be used like this:
 
-    (defn routes [master-client]
-      (fn [req]
-      (case (req :uri)
-        "/login" ((login-handler master-client) req )
-        ((require-bearer-token! handler) req))))
+```clojure
+(defn routes [master-client]
+  (fn [req]
+  (case (req :uri)
+    "/login" ((login-handler master-client) req )
+    ((require-bearer-token! handler) req))))
+```
 
 The master-client is a client record representing your own application. A default login view is defined in clauth.views/login-form-handler but you can add your own. This just needs to be a ring handler presenting a form with the parameters "username" and "password".
 
-    (defn routes [master-client]
-      (fn [req]
-      (case (req :uri)
-        "/login" ((login-handler my-own-login-form-handler master-client) req )
-        ((require-bearer-token! handler) req))))
+```clojure
+(defn routes [master-client]
+  (fn [req]
+  (case (req :uri)
+    "/login" ((login-handler my-own-login-form-handler master-client) req )
+    ((require-bearer-token! handler) req))))
+```
 
 ## Run Demo App
 
 A mini server demo is available. It creates a client for you and prints out instructions on how to issue tokens with curl.
 
-    lein run -m clauth.demo
+```
+lein run -m clauth.demo
+```
 
 ## TODO
 
@@ -173,7 +206,9 @@ You will need to have a Redis database running in the background in order to hav
 
 If you have Homebrew on Mac OSX, you can get Redis by typing ```brew install redis``` in the command line. Once that's done, get the Redis database started in your Terminal window by typing the following:
 
-    redis-server /usr/local/etc/redis.conf
+```
+redis-server /usr/local/etc/redis.conf
+```
 
 ## License
 

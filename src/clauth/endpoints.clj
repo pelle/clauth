@@ -36,9 +36,12 @@
       :body (generate-string {:error error })})
 
 (defn respond-with-new-token
-  "create a new token and respond with json"
-  [client owner]
-  (token-response (create-token client owner)))
+  "create a new token and respond with json. If using built in token system it takes client and subject (user).
+   You can also pass a function to it and the client and subject."
+  ([client subject]
+    (respond-with-new-token create-token client subject))
+  ([token-creator client subject]
+    (token-response (token-creator client subject))))
 
 (defn basic-authentication-credentials 
   "decode basic authentication credentials.
@@ -70,50 +73,58 @@
 
 (defn grant-type
   "extract grant type from request"
-  [req _ _] ((req :params) :grant_type))
+  [req _] ((req :params) :grant_type))
 
 (defmulti token-request-handler grant-type)
 
-(defmethod token-request-handler "client_credentials" [req client-authenticator _]
+(defmethod token-request-handler "client_credentials" 
+  [req { :keys [client-authenticator token-creator]}]
   (client-authenticated-request 
     req 
     client-authenticator
-    (fn [req client] (respond-with-new-token client client))))
+    (fn [req client] (respond-with-new-token token-creator client client))))
 
-(defmethod token-request-handler "authorization_code" [req client-authenticator _]
+(defmethod token-request-handler "authorization_code" 
+  [req { :keys [ client-authenticator token-creator auth-code-lookup auth-code-revoker ]}]
   (client-authenticated-request 
     req 
     client-authenticator
     (fn [req client] 
-      (if-let [code (fetch-auth-code ((req :params) :code))]
+      (if-let [code (auth-code-lookup ((req :params) :code))]
         (if (and  (= (:client-id client) (:client-id (:client code)))
                   (= (:redirect-uri code) ((req :params) :redirect_uri)))
-          (let [ _ (revoke-auth-code! code)                  
-                 token (create-token client (:subject code) (:scope code) (:object code))]
+          (let [ _ (auth-code-revoker code)                  
+                 token (token-creator client (:subject code) (:scope code) (:object code))]
              (token-response token))
           (error-response "invalid_grant"))
         (error-response "invalid_grant")))))
       
 
-(defmethod token-request-handler "password" [req client-authenticator user-authenticator]
+(defmethod token-request-handler "password" 
+  [req { :keys [ client-authenticator token-creator user-authenticator]} ]
   (client-authenticated-request 
     req 
     client-authenticator
     (fn [req client] (if-let [user (user-authenticator ((req :params) :username) ((req :params) :password))]
-                        (respond-with-new-token client user)
+                        (respond-with-new-token token-creator client user)
                         (error-response "invalid_grant")))))
 
-(defmethod token-request-handler :default [req client-authenticator user-authenticator]
+(defmethod token-request-handler :default [req _]
   (error-response "unsupported_grant_type"))
 
 
 (defn token-handler
   ([]
-    (token-handler clauth.client/authenticate-client clauth.user/authenticate-user))
+    (token-handler {}))
   ([client-authenticator user-authenticator]
+    (token-handler {:client-authenticator client-authenticator :user-authenticator user-authenticator}))
+  ([config]
     (fn [req]
-      (token-request-handler req client-authenticator user-authenticator)
-      )))
+      (token-request-handler req (merge { :client-authenticator clauth.client/authenticate-client 
+                                          :user-authenticator clauth.user/authenticate-user
+                                          :token-creator create-token
+                                          :auth-code-revoker revoke-auth-code! 
+                                          :auth-code-lookup fetch-auth-code } config)))))
  
 (defn login-handler
   "present a login form to user and log them in by adding an access token to the session"
