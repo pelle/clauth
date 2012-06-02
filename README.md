@@ -4,8 +4,6 @@
 
 This is a simple OAuth 2 provider that is designed to be used as a primary authentication provider for a Clojure Ring app.
 
-It is under development by a Clojure novice. Please help give feedback on use of idiomatic clojure.
-
 It currently handles OAuth2 bearer authentication and interactive authentication. 
 
 See [draft-ietf-oauth-v2-bearer](http://tools.ietf.org/html/draft-ietf-oauth-v2-bearer-08)
