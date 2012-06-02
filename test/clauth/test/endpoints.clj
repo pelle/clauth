@@ -470,7 +470,7 @@
         (clauth.client/reset-client-store!)
         (clauth.user/reset-user-store!)
         (let [ client (clauth.client/register-client)
-               handler (login-handler (fn [_] { :body "login form" } ) client)
+               handler (login-handler {:login-form (fn [_] { :body "login form" } ) :client client})
                user   (clauth.user/register-user "john@example.com" "password")]
 
             (let [ response (handler { 

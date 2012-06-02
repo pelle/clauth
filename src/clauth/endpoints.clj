@@ -114,6 +114,15 @@
 
 
 (defn token-handler
+  "Ring handler that issues oauth tokens.
+
+  Configure it by passing an optional map containing:
+
+  :client-authenticator a function that returns a client record when passwed a correct client_id and client secret combo
+  :user-authenticator a function that returns a user when passwed a correct username and password combo
+  :auth-code-lookup  a function which returns a auth code record when passed it's code string
+  :token-creator a function that creates a new token when passed a client and a user
+  :auth-code-revoker a function that revokes a auth-code when passed an auth-code record"
   ([]
     (token-handler {}))
   ([client-authenticator user-authenticator]
@@ -127,26 +136,36 @@
                                           :auth-code-lookup fetch-auth-code } config)))))
  
 (defn login-handler
-  "present a login form to user and log them in by adding an access token to the session"
-  ([client]
-    (login-handler login-form-handler clauth.user/authenticate-user client))
-  ([login-form client]
-    (login-handler login-form clauth.user/authenticate-user client))
-  ([login-form user-authenticator client]
-    (csrf-protect!
-      (fn [req]
-        (if (= :get (req :request-method))
-          (login-form req)
-          (if-let [user (user-authenticator ((req :params) :username) ((req :params) :password))]
-            (let 
-              [ destination ((req :session {}) :return-to "/")
-                session ( dissoc (assoc (req :session) :access_token (:token (create-token client user))) :return-to )
-              ]
-              { :status 302
-                :headers {"Content-Type" "text/html" "Location" destination}
-                :session session
-                :body "Redirecting to /"})
-            (login-form req)))))))
+  "Present a login form to user and log them in by adding an access token to the session.
+
+  Configure it by passing the following to a map:
+
+  Required value
+  :client the site's own client application record
+
+  Optional entries to customize functionality:
+  :login-form a ring handler to display a login form
+  :user-authenticator a function that returns a user when passwed a correct username and password combo
+  :token-creator a function that creates a new token when passed a client and a user"
+  [config]
+    (let [config (merge { :login-form login-form-handler
+                          :user-authenticator clauth.user/authenticate-user
+                          :token-creator clauth.token/create-token } config)
+          {:keys [client login-form user-authenticator token-creator]} config ]
+      (csrf-protect!
+        (fn [req]
+          (if (= :get (req :request-method))
+            (login-form req)
+            (if-let [user (user-authenticator ((req :params) :username) ((req :params) :password))]
+              (let 
+                [ destination ((req :session {}) :return-to "/")
+                  session ( dissoc (assoc (req :session) :access_token (:token (token-creator client user))) :return-to )
+                ]
+                { :status 302
+                  :headers {"Content-Type" "text/html" "Location" destination}
+                  :session session
+                  :body "Redirecting to /"})
+              (login-form req)))))))
 
 (defn logout-handler
   "logout user"
@@ -207,15 +226,23 @@
   (authorization-error-response req "unsupported_grant_type"))
 
 (defn authorization-handler
-  "present a login form to user and log them in by adding an access token to the session"
+  "present a login form to user and log them in by adding an access token to the session
+
+  Configure it by passing an optional map containing:
+
+  :authorization-form a ring handler to display a authorization form
+  :client-lookup a function which returns a client when passed its client_id
+  :token-lookup  a function which returns a token record when passed it's token string
+  :token-creator a function that creates a new token when passed a client and a user
+  :auth-code-creator a function that creates an authorization code record when passed a client, user and redirect uri"
   ([]
     (authorization-handler {}))
   ([config]
-    (let [config (merge config {:authorization-form authorization-form-handler
-                                :client-lookup clauth.client/fetch-client
-                                :token-lookup clauth.token/fetch-token
-                                :token-creator clauth.token/create-token 
-                                :auth-code-creator clauth.auth-code/create-auth-code})
+    (let [config (merge {:authorization-form authorization-form-handler
+                        :client-lookup clauth.client/fetch-client
+                        :token-lookup clauth.token/fetch-token
+                        :token-creator clauth.token/create-token 
+                        :auth-code-creator clauth.auth-code/create-auth-code} config)
           authorization-form (config :authorization-form)]
 
       (require-user-session!

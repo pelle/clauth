@@ -62,7 +62,7 @@
     (case (req :uri)
       "/token" ((token-handler) req )
       "/authorization" (use-layout req "Authorize App" ((authorization-handler) req ))
-      "/login" (use-layout req "Login" ((login-handler master-client) req ))
+      "/login" (use-layout req "Login" ((login-handler {:client master-client}) req ))
       "/logout" (logout-handler req )
       ((require-bearer-token! handler) req)))))
 
