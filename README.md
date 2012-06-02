@@ -135,6 +135,27 @@ And wrap your handler with a redis connection middleware similar to this:
      (app req))))
 ```
 
+## Authorization OAuth Tokens
+
+There is currently a single authorization-handler that handles authorization called authorization-handler. Install it in your routes by convention at "/authorize" or "/oauth/authorize". 
+
+```clojure
+(defn routes [req]
+  (case (req :uri)
+    "/authorize" ((authorization-handler) req )
+    ((require-bearer-token! handler) req)))
+```
+
+Authorization handler comes with defaults that use the various built in token, user etc. stores. You can override these by passing in a configuration map containing functions.
+
+```clojure
+(authorization-handler {:authorization-form authorization-form-handler
+                        :client-lookup clauth.client/fetch-client
+                        :token-lookup clauth.token/fetch-token
+                        :token-creator clauth.token/create-token 
+                        :auth-code-creator clauth.auth-code/create-auth-code})
+```
+
 ## Issuing OAuth Tokens
 
 There is currently a single token-handler that provides token issuance called token-handler. Install it in your routes by convention at "/token" or "/oauth/token". 

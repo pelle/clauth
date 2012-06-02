@@ -164,11 +164,6 @@
   (if (logged-in? req)
     (:subject (req :access-token))))
   
-
-(defn response-type
-  "extract grant type from request"
-  [req] ((req :params) :response_type))
-
 (defn authorization-response
   "Create a proper redirection response depending on response_type"
   [req response_params ]
@@ -188,20 +183,24 @@
     (authorization-response req { "error" error })
     (error-page error)))
 
+(defn response-type
+  "extract grant type from request"
+  [req _] ((req :params) :response_type))
+
 (defmulti authorization-request-handler response-type)
 
-(defmethod authorization-request-handler "token" [req]
+(defmethod authorization-request-handler "token" [req {:keys [client-lookup token-lookup token-creator ]}]
   (let [ params (req :params)
-         client (fetch-client (params :client_id))
-         user ( :subject (fetch-token (:access_token (req :session))))
-         token (create-token client user)]
+         client (client-lookup (params :client_id))
+         user ( :subject (token-lookup (:access_token (req :session))))
+         token (token-creator client user)]
     (authorization-response req {:access_token (:token token) :token_type "bearer"})))
 
-(defmethod authorization-request-handler "code" [req]
+(defmethod authorization-request-handler "code" [req {:keys [client-lookup token-lookup auth-code-creator ]}]
   (let [ params (req :params)
-         client (fetch-client (params :client_id))
-         user ( :subject (fetch-token (:access_token (req :session))))
-         code (create-auth-code client user (:redirect_uri params))]
+         client (client-lookup (params :client_id))
+         user ( :subject (token-lookup (:access_token (req :session))))
+         code (auth-code-creator client user (:redirect_uri params))]
     (authorization-response req {:code (:code code)})))
 
 (defmethod authorization-request-handler :default [req]
@@ -210,18 +209,23 @@
 (defn authorization-handler
   "present a login form to user and log them in by adding an access token to the session"
   ([]
-    (authorization-handler authorization-form-handler))
-  ([login-form]
-    (require-user-session!
-      (csrf-protect!
-        (fn [req]
-          (let [params (req :params)]
-            (if (and (params :response_type) (params :client_id))
+    (authorization-handler {}))
+  ([config]
+    (let [config (merge config {:authorization-form authorization-form-handler
+                                :client-lookup clauth.client/fetch-client
+                                :token-lookup clauth.token/fetch-token
+                                :token-creator clauth.token/create-token 
+                                :auth-code-creator clauth.auth-code/create-auth-code})
+          authorization-form (config :authorization-form)]
 
+      (require-user-session!
+        (csrf-protect!
+          (fn [ {:keys [params] :as req}]
+            (if (and (params :response_type) (params :client_id))
               (if (some (partial = (params :response_type)) ["code" "token"] )
                 (if (= :get (req :request-method))
-                  (authorization-form-handler req)
-                  (authorization-request-handler req)
+                  (authorization-form req)
+                  (authorization-request-handler req config)
                 )
                 (authorization-error-response req "unsupported_response_type")
               )
