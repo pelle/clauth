@@ -29,7 +29,7 @@
                     ((:session req {}) :access_token)
                     (((:cookies req {}) "access_token" {}) :value )
                   )]
-        (if-let [access-token (find-token token)]
+        (if-let [access-token (and token (find-token token))]
           (app ( assoc req :access-token access-token))
           (app req))))))
 
