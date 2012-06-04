@@ -153,14 +153,13 @@
                           :token-creator clauth.token/create-token } config)
           {:keys [client login-form user-authenticator token-creator]} config ]
       (csrf-protect!
-        (fn [req]
-          (if (= :get (req :request-method))
+        (fn [{:keys [request-method params session] :as req} ]
+          (if (= :get request-method)
             (login-form req)
-            (if-let [user (user-authenticator ((req :params) :username) ((req :params) :password))]
+            (if-let [user (user-authenticator (params :username) (params :password))]
               (let 
-                [ destination ((req :session {}) :return-to "/")
-                  session ( dissoc (assoc (req :session) :access_token (:token (token-creator client user))) :return-to )
-                ]
+                [ destination (session :return-to "/")
+                  session ( dissoc (assoc session :access_token (:token (token-creator client user))) :return-to )]
                 { :status 302
                   :headers {"Content-Type" "text/html" "Location" destination}
                   :session session

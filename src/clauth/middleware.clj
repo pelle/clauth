@@ -61,13 +61,12 @@
     (re-find #"(text/html|application/xhtml\+xml)" accept)))
 
 (defn is-form?
-  "returns true if request has text/html in the accept header"
+  "returns true if request has form in the accept header"
   [req]
   (if (or (not (:access-token req)) (and (:access-token req) (:access_token (req :session {}))))
     (if-let [content-type (req :content-type)]
       (if (seq (filter (partial  = content-type) ["application/x-www-form-urlencoded" "multipart/form-data"])) true))))
 
-  
 (defmacro if-html
   "if request is for a html page it runs the first handler if not the second"
   [req html api]
@@ -97,20 +96,20 @@
   "add a csrf token to session and reject a post request without it"
   [app]
     (fn
-      [req]
-      (if-form req 
+      [{:keys [request-method session params] :as req }]
+      (if (and (= request-method :get)
+               (is-html? req))
         (let [req (with-csrf-token req)
               token (csrf-token req)
-              session (req :session)]
-          (if (or 
-                (= (:request-method req) :get)
-                (= token ((req :params {}) :csrf-token)))
-            (let [response (app req)
-                  session (assoc (response :session (req :session)) :csrf-token token)]
-              (assoc response :session session))
+              response (app req)]
+          (assoc-in response [:session csrf-token] token))
 
-            { :status 403 }))
-        (app req))))
+        (if-form req
+          (let [token (csrf-token req)]
+            (if (and token (params :csrf-token) (= token (params :csrf-token)))
+              (app req)
+              { :status 403 :body "csrf token does not match"}))
+          (app req)))))
 
 
 (defn athentication-required-response 

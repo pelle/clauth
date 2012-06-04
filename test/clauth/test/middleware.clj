@@ -182,7 +182,7 @@
 
     (deftest protects-against-csrf
         (let [handler (csrf-protect! (fn [req] req ))]
-            (is (not (nil? (:csrf-token (:session (handler { :request-method :get :content-type "application/x-www-form-urlencoded" :access-token "abcde" :session {:access_token "abcde"}} ))))))
+            (is (not (nil? (:csrf-token (:session (handler { :request-method :get :headers { "accept" "text/html" } :access-token "abcde" :session {:access_token "abcde"}} ))))))
             (is (= "existing" (:csrf-token (:session (handler { :request-method :get :session {:csrf-token "existing"}}))))))
 
         (let [handler (csrf-protect! (fn [req] {:status 200 } ))]
@@ -193,7 +193,7 @@
                         (handler { :request-method :post :content-type "application/json" :access-token "abcde" :session {:access_token "abcde"}}))) "should allow non html")
 
             (is (= 200 (:status
-                        (handler { :request-method :get :content-type "application/x-www-form-urlencoded" :access-token "abcde" :session {:access_token "abcde"} }))))
+                        (handler { :request-method :get :headers { "accept" "text/html" } :access-token "abcde" :session {:access_token "abcde"} }))))
 
             (is (= 200 (:status
                         (handler {  :request-method :post 
