@@ -102,7 +102,7 @@
         (let [req (with-csrf-token req)
               token (csrf-token req)
               response (app req)]
-          (assoc-in response [:session csrf-token] token))
+          (assoc-in response [:session :csrf-token] token))
 
         (if-form req
           (let [token (csrf-token req)]
