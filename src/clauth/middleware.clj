@@ -81,16 +81,16 @@
 (defn csrf-token
   "extract csrf token from request"
   [req]
-  ((req :session {}) :csrf-token))
+  (or (req :csrf-token)
+      ((req :session {}) :csrf-token)))
 
 (defn with-csrf-token
   "add a csrf token to request"
   [req]
   (if (csrf-token req)
     req
-    (let [token (crypto.random/base64 32)
-      session (assoc (req :session {}) :csrf-token token)]
-      (assoc req :session session))))
+    (let [token (crypto.random/base64 32)]
+      (assoc req :csrf-token token))))
 
 (defn csrf-protect!
   "add a csrf token to session and reject a post request without it"
@@ -99,17 +99,17 @@
       [{:keys [request-method session params] :as req }]
       (if (and (= request-method :get)
                (is-html? req))
-        (let [req (with-csrf-token req)
-              token (csrf-token req)
-              response (app req)]
-          (assoc-in response [:session :csrf-token] token))
+        (let [req (with-csrf-token req)]
+          (if-let [token (:csrf-token req)]
+            (assoc-in (app req) [:session :csrf-token] token)
+            (app req)))
 
-        (if-form req
-          (let [token (csrf-token req)]
-            (if (and token (params :csrf-token) (= token (params :csrf-token)))
-              (app req)
-              { :status 403 :body "csrf token does not match"}))
-          (app req)))))
+          (if-form req
+            (let [token (csrf-token req)]
+              (if (and token (params :csrf-token) (= token (params :csrf-token)))
+                (app req)
+                { :status 403 :body "csrf token does not match"}))
+            (app req)))))
 
 
 (defn athentication-required-response 

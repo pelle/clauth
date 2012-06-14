@@ -173,15 +173,19 @@
 
     (deftest csrf-token-extraction
         (is (nil? (csrf-token {})))
-        (is (= "token" (csrf-token { :session { :csrf-token "token" }}))))
+        (is (= "token" (csrf-token { :session { :csrf-token "token" }})))
+        (is (= "token" (csrf-token { :csrf-token "token" }))))
 
     (deftest csrf-is-added-to-session
-        (is (not (nil? (:csrf-token (:session (with-csrf-token {}))))))
-        (is (= "existing" (:csrf-token (:session (with-csrf-token { :session {:csrf-token "existing"}}))))))
+        ;; Should add a csrf-token entry to request if none is in session
+        (is (not (nil? (:csrf-token (with-csrf-token {}))))) 
+        ;; should not add to request if one is already in request
+        (is (nil? (:csrf-token (with-csrf-token { :session {:csrf-token "existing"}}))))) 
 
     (deftest protects-against-csrf
         (let [handler (csrf-protect! (fn [req] req ))]
             (is (not (nil? (:csrf-token (:session (handler { :request-method :get :headers { "accept" "text/html" } :access-token "abcde" :session {:access_token "abcde"}} ))))))
+
             (is (= "existing" (:csrf-token (:session (handler { :request-method :get :session {:csrf-token "existing"}}))))))
 
         (let [handler (csrf-protect! (fn [req] {:status 200 } ))]
@@ -198,8 +202,7 @@
                         (handler { :request-method :get :headers { "accept" "text/html" }}))))))
 
             (let [response (handler { :request-method :get :headers { "accept" "text/html" } :session {:csrf-token "existing"}})]
-                (is (= "existing" (:csrf-token (:session
-                        response )))))
+                (is (nil? (:session response ))))
 
             (is (= 200 (:status
                         (handler {  :request-method :post 
