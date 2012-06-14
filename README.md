@@ -21,7 +21,7 @@ The following bearer tokens are implemented:
 Add the following dependency to your `project.clj` file:
 
 ```clojure
-[clauth "1.0.0-rc7"]
+[clauth "1.0.0-rc8"]
 ```
 
 ## Usage
