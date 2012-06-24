@@ -112,7 +112,7 @@
             (app req)))))
 
 
-(defn athentication-required-response 
+(defn authentication-required-response 
   "Return HTTP 401 Response"
   [ req ]
   (if-html req 
@@ -148,7 +148,7 @@
      (fn [req]
        (if (req :access-token)
            (app req)
-           (athentication-required-response req ))) find-token)))
+           (authentication-required-response req ))) find-token)))
 
 (defn request-uri [req]
   (if (req :query-string)
