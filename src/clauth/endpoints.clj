@@ -1,10 +1,11 @@
 (ns clauth.endpoints
-  (:require [clauth.token :refer [create-token]]
-            [clauth.client :as client]
-            [clauth.user :as user]
-            [clauth.auth-code :refer [revoke-auth-code! fetch-auth-code]]
-            [clauth.middleware :as mw]
-            [clauth.views :as views]
+  (:require [clauth
+             [token :refer [create-token]]
+             [client :as client]
+             [user :as user]
+             [auth-code :refer [revoke-auth-code! fetch-auth-code]]
+             [middleware :as mw]
+             [views :as views]]
             [hiccup.util :refer [url-encode]]
             [ring.util.response :refer [redirect]]
             [cheshire.core :as cheshire])

@@ -1,5 +1,6 @@
 (ns clauth.middleware
-  (:require [ring.util.response :refer [redirect]]))
+  (:require [ring.util.response :refer [redirect]]
+            [clauth.token :as token]))
 
 (defn wrap-bearer-token
   "Wrap request with a OAuth2 bearer token as defined in
@@ -17,7 +18,7 @@
 
    The subject is added to the :access-token key of the request."
   ([app]
-     (wrap-bearer-token app clauth.token/find-valid-token))
+     (wrap-bearer-token app token/find-valid-token))
   ([app find-token]
      (fn [req]
        (let [auth ((:headers req {}) "authorization")
@@ -42,7 +43,7 @@
 
    The subject is added to the :access-token key of the request."
   ([app]
-     (wrap-user-session app clauth.token/find-valid-token))
+     (wrap-user-session app token/find-valid-token))
   ([app find-token]
      (fn [req]
        (let [auth ((:headers req {}) "authorization")
@@ -140,7 +141,7 @@
 
    will return a [HTTP 401 header](http://tools.ietf.org/html/draft-ietf-oauth-v2-bearer-08#section-2.4) if no valid token is present."
   ([app]
-     (require-bearer-token! app clauth.token/find-valid-token))
+     (require-bearer-token! app token/find-valid-token))
   ([app find-token]
      (wrap-bearer-token
       (fn [req]
@@ -176,7 +177,7 @@
    Will redirect user to login url if not authenticated and issue a 403 to
    other requests."
   ([app]
-     (require-user-session! app clauth.token/find-valid-token))
+     (require-user-session! app token/find-valid-token))
   ([app find-token]
      (wrap-user-session
       (fn [req]

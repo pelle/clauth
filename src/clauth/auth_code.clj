@@ -1,6 +1,7 @@
 (ns clauth.auth-code
-  (:require [clauth.store :as store]
-            [clauth.token :as token]
+  (:require [clauth
+             [store :as store]
+             [token :as token]]
             [clj-time.core :as time]))
 
 (defrecord OAuthCode [code client subject redirect-uri expires scope object])

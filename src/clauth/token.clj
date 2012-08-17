@@ -1,8 +1,9 @@
 (ns clauth.token
   (:require [clauth.store :as store]
             [crypto.random :as random]
-            [clj-time.core :as time]
-            [clj-time.coerce :as coerce]
+            [clj-time
+             [core :as time]
+             [coerce :as coerce]]
             [cheshire.core :as cheshire]))
 
 (defprotocol Expirable

@@ -1,21 +1,25 @@
 (ns clauth.demo
-  (:require [clauth.middleware :as mw]
-            [clauth.endpoints :as ep]
-            [clauth.client :refer [client-store clients register-client]]
-            [clauth.token :refer [token-store]]
-            [clauth.user :refer [user-store]]
-            [clauth.auth-code :refer [auth-code-store]]
-            [clauth.store.redis :refer [create-redis-store with-redis
-                                        wrap-redis]]
+  (:require [clauth
+             [middleware :as mw]
+             [endpoints :as ep]
+             [client :refer [client-store clients register-client]]
+             [token :refer [token-store]]
+             [user :refer [user-store]]
+             [auth-code :refer [auth-code-store]]]
+            [clauth.store.redis
+             :refer [create-redis-store with-redis wrap-redis]]
             [ring.adapter.jetty :refer [run-jetty]]
-            [ring.middleware.cookies :refer [wrap-cookies]]
-            [ring.middleware.session :refer [wrap-session]]
-            [ring.middleware.params :refer [wrap-params]]
-            [ring.middleware.keyword-params :refer [wrap-keyword-params]]
-            [hiccup.bootstrap.middleware :refer [wrap-bootstrap-resources]]
-            [hiccup.bootstrap.page :refer [include-bootstrap fixed-layout]]
-            [hiccup.page :refer [html5]]
-            [hiccup.element :refer [link-to unordered-list]]))
+            [ring.middleware
+             [cookies :refer [wrap-cookies]]
+             [session :refer [wrap-session]]
+             [params :refer [wrap-params]]
+             [keyword-params :refer [wrap-keyword-params]]]
+            [hiccup.bootstrap
+             [middleware :refer [wrap-bootstrap-resources]]
+             [page :refer [include-bootstrap fixed-layout]]]
+            [hiccup
+             [page :refer [html5]]
+             [element :refer [link-to unordered-list]]]))
 
 (defn nav-menu [req]
   (if (ep/logged-in? req)

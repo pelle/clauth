@@ -1,9 +1,10 @@
 (ns clauth.views
   (:require [ring.util.response :refer [response]]
             [clauth.middleware :refer [csrf-token]]
-            [hiccup.core :refer [html]]
-            [hiccup.form :refer [hidden-field form-to label text-field
-                                 password-field]]
+            [hiccup
+             [core :refer [html]]
+             [form
+              :refer [hidden-field form-to label text-field password-field]]]
             [clauth.client :refer [fetch-client]]))
 
 (defn csrf-field
