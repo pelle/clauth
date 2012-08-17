@@ -23,8 +23,8 @@
       (redis/set (str namespace "/" (key_param item))
                  (cheshire.core/generate-string item))
       item))
-  (entries [this] (map #( cheshire.core/parse-string % true)
-                       (all-in-namespace namespace) ))
+  (entries [this] (map #(cheshire.core/parse-string % true)
+                       (all-in-namespace namespace)))
   (reset-store! [this] (redis/flushdb)))
 
 (defn create-redis-store

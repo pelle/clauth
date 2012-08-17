@@ -207,7 +207,7 @@
                            {:session {:csrf-token "existing"}})))))
 
 (deftest protects-against-csrf
-  (let [handler (base/csrf-protect! (fn [req] req ))]
+  (let [handler (base/csrf-protect! (fn [req] req))]
     (is (not (nil?
               (:csrf-token
                (:session

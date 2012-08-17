@@ -19,13 +19,13 @@
   (is (= 0 (count (base/auth-codes))) "starts out empty")
   (let [record (base/create-auth-code "my-client" "my-user"
                                       "http://test.com/redirect")]
-    (is (= "my-client" ( :client record )) "should have client")
-    (is (= "my-user" ( :subject record )) "should have subject")
-    (is (= "http://test.com/redirect" ( :redirect-uri record ))
+    (is (= "my-client" (:client record)) "should have client")
+    (is (= "my-user" (:subject record)) "should have subject")
+    (is (= "http://test.com/redirect" (:redirect-uri record))
         "should have redirect-uri")
-    (is (not (nil? (:code record ))) "should include auth-code field")
-    (is (= 1 (count (base/auth-codes ))) "added one")
-    (is (= record (first (base/auth-codes ))) "added one")
+    (is (not (nil? (:code record))) "should include auth-code field")
+    (is (= 1 (count (base/auth-codes))) "added one")
+    (is (= record (first (base/auth-codes))) "added one")
     (is (= record (base/find-valid-auth-code (:code record))))))
 
 (deftest auth-code-validity

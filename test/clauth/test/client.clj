@@ -7,10 +7,10 @@
   (let [record (base/register-client "Super company inc" "http://example.com")
         client-id (:client-id record)
         client-secret (:client-secret record)]
-    (is (= "Super company inc" (:name record ))
+    (is (= "Super company inc" (:name record))
         "should add extra attributes to client")
-    (is (not (nil? client-id )) "should include client_id field")
-    (is (not (nil? client-secret )) "should include client_secret field")
+    (is (not (nil? client-id)) "should include client_id field")
+    (is (not (nil? client-secret)) "should include client_secret field")
     (is (= 1 (count (base/clients))) "added one")
     (is (= record (first (base/clients))) "added one")
     (is (= record (base/authenticate-client client-id client-secret))

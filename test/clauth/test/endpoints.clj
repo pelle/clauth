@@ -50,8 +50,8 @@
                                     (.encodeAsString
                                      (Base64.)
                                      (.getBytes
-                                      (str (:client-id client ) ":"
-                                           (:client-secret client )))))}})
+                                      (str (:client-id client) ":"
+                                           (:client-secret client)))))}})
            {:status 200
             :headers {"Content-Type" "application/json"}
             :body (str "{\"access_token\":\"" (:token (first (tokens)))
@@ -201,7 +201,7 @@
       (is (= (handler {:params {:grant_type "authorization_code"
                                 :code (:code code)
                                 :redirect_uri redirect_uri
-                                :client_id (:client-id other )
+                                :client_id (:client-id other)
                                 :client_secret (:client-secret other)}})
                 {:status 400
                  :headers {"Content-Type" "application/json"}
@@ -210,7 +210,7 @@
 
       (is (= (handler {:params {:grant_type "authorization_code"
                                 :code (:code code)
-                                :client_id (:client-id client )
+                                :client_id (:client-id client)
                                 :client_secret (:client-secret client)}})
 
              {:status 400
@@ -231,7 +231,7 @@
 
     (is (= (handler {:params {:grant_type "authorization_code"
                               :redirect_uri redirect_uri
-                              :client_id (:client-id client )
+                              :client_id (:client-id client)
                               :client_secret (:client-secret client)}})
 
            {:status 400
@@ -281,7 +281,7 @@
                              :params params
                              :uri uri
                              :query-string query-string
-                             :session {:access_token (:token session_token )}})]
+                             :session {:access_token (:token session_token)}})]
       (is (= (response :status) 200)))
 
     (let [response (handler {:request-method :get
@@ -363,13 +363,13 @@
   (reset-token-store!)
   (client/reset-client-store!)
   (user/reset-user-store!)
-  (let [ handler (base/authorization-handler)
+  (let [handler (base/authorization-handler)
         client (client/register-client)
         user   (user/register-user "john@example.com" "password")
         redirect_uri "http://test.com"
         uri "/authorize"
         params {:response_type "token"
-                :client_id ( :client-id client )
+                :client_id (:client-id client)
                 :redirect_uri redirect_uri
                 :state "abcde"
                 :scope "calendar"}
@@ -410,7 +410,7 @@
                              :params (dissoc params :client_id)
                              :uri uri
                              :query-string query-string
-                             :session {:access_token (:token session_token )}})]
+                             :session {:access_token (:token session_token)}})]
       (is (= (response :status) 302))
       (is (= (response :headers)
              {"Location" "http://test.com#state=abcde&error=invalid_request"})
@@ -432,7 +432,7 @@
                              :params (assoc params :response_type "unsupported")
                              :uri uri
                              :query-string query-string
-                             :session {:access_token (:token session_token )}})]
+                             :session {:access_token (:token session_token)}})]
       (is (= (response :status) 302))
       (is (= (response :headers)
              {"Location"
