@@ -1,9 +1,8 @@
 (ns clauth.client
-  (:use [clauth.token]
-        [clauth.store])
-  (:require [cheshire.core]))
+  (:require [clauth.token :refer [generate-token]]
+            [clauth.store :as store]))
 
-(defonce client-store (atom (create-memory-store)))
+(defonce client-store (atom (store/create-memory-store)))
 
 (defrecord ClientApplication [client-id client-secret name url])
 
@@ -24,22 +23,22 @@
 (defn reset-client-store!
   "mainly for used in testing. Clears out all clients."
   []
-  (reset-store! @client-store))
+  (store/reset-store! @client-store))
 
 (defn fetch-client
   "Find OAuth token based on the id string"
   [t]
-  (client-app (fetch @client-store t)))
+  (client-app (store/fetch @client-store t)))
 
 (defn store-client
   "Store the given ClientApplication and return it."
   [t]
-  (store! @client-store :client-id t))
+  (store/store! @client-store :client-id t))
 
 (defn clients
   "Sequence of clients"
   []
-  (entries @client-store))
+  (store/entries @client-store))
 
 (defn register-client
   "create a unique client and store it in the client store"

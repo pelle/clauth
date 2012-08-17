@@ -1,148 +1,145 @@
 (ns clauth.endpoints
-  (:use [clauth.token]
-        [clauth.client]
-        [clauth.user]
-        [clauth.auth-code]
-        [clauth.middleware :only [csrf-protect!
-                                  require-user-session!]]
-        [clauth.views :only [login-form-handler
-                             authorization-form-handler
-                             error-page]]
-        [hiccup.util :only [url-encode]]
-        [ring.util.response]
-        [cheshire.core])
+  (:require [clauth.token :refer [create-token]]
+            [clauth.client :as client]
+            [clauth.user :as user]
+            [clauth.auth-code :refer [revoke-auth-code! fetch-auth-code]]
+            [clauth.middleware :as mw]
+            [clauth.views :as views]
+            [hiccup.util :refer [url-encode]]
+            [ring.util.response :refer [redirect]]
+            [cheshire.core :as cheshire])
   (:import [org.apache.commons.codec.binary Base64]))
 
-(defn decorate-token
-  "Take a token map and decorate it according to specs
+ (defn decorate-token
+   "Take a token map and decorate it according to specs
 
-   http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-5.1"
-  [token]
-  {:access_token (:token token) :token_type "bearer"})
+    http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-5.1"
+   [token]
+   {:access_token (:token token) :token_type "bearer"})
 
-(defn token-response
-  "Create a ring response for a token response"
-  [token]
-  {:status 200
-   :headers {"Content-Type" "application/json"}
-   :body (generate-string (decorate-token token))})
+ (defn token-response
+   "Create a ring response for a token response"
+   [token]
+   {:status 200
+    :headers {"Content-Type" "application/json"}
+    :body (cheshire/generate-string (decorate-token token))})
 
-(defn error-response
-  "Create a ring response for a oauth error"
-  [error]
-  {:status 400
-   :headers {"Content-Type" "application/json"}
-   :body (generate-string {:error error})})
+ (defn error-response
+   "Create a ring response for a oauth error"
+   [error]
+   {:status 400
+    :headers {"Content-Type" "application/json"}
+    :body (cheshire/generate-string {:error error})})
 
-(defn respond-with-new-token
-  "create a new token and respond with json. If using built in token system it takes client and subject (user).
-   You can also pass a function to it and the client and subject."
-  ([client subject]
-    (respond-with-new-token create-token client subject))
-  ([token-creator client subject]
-    (token-response (token-creator client subject))))
+ (defn respond-with-new-token
+   "create a new token and respond with json. If using built in token system it takes client and subject (user).
+    You can also pass a function to it and the client and subject."
+   ([client subject]
+     (respond-with-new-token create-token client subject))
+   ([token-creator client subject]
+     (token-response (token-creator client subject))))
 
-(defn basic-authentication-credentials
-  "decode basic authentication credentials.
+ (defn basic-authentication-credentials
+   "decode basic authentication credentials.
 
-   If it exists it returns a vector of username and password.
+    If it exists it returns a vector of username and password.
 
-   If not nil."
-  [req]
-  (if-let [auth-string ((req :headers {}) "authorization")]
-    (if-let [basic-token (last (re-find #"^Basic (.*)$" auth-string))]
-      (if-let [credentials (String. (Base64/decodeBase64 basic-token))]
-        (clojure.string/split credentials #":")))))
+    If not nil."
+   [req]
+   (if-let [auth-string ((req :headers {}) "authorization")]
+     (if-let [basic-token (last (re-find #"^Basic (.*)$" auth-string))]
+       (if-let [credentials (String. (Base64/decodeBase64 basic-token))]
+         (clojure.string/split credentials #":")))))
 
-(defn client-authenticated-request
-  "Check that request is authenticated by client either using Basic
-   authentication or url form encoded parameters.
+ (defn client-authenticated-request
+   "Check that request is authenticated by client either using Basic
+    authentication or url form encoded parameters.
 
-   The client_id and client_secret are checked against the authenticate-client
-   function.
+    The client_id and client_secret are checked against the authenticate-client
+    function.
 
-   If authenticate-client returns a client map it runs success function with
-   the request and the client."
-  [req authenticator success]
-  (let [basic (basic-authentication-credentials req)
-        client_id (if basic (first basic) ((req :params) :client_id))
-        client_secret (if basic (last basic) ((req :params) :client_secret))
-        client (authenticator client_id client_secret)]
-    (if client
-      (success req client)
-      (error-response "invalid_client"))))
+    If authenticate-client returns a client map it runs success function with
+    the request and the client."
+   [req authenticator success]
+   (let [basic (basic-authentication-credentials req)
+         client_id (if basic (first basic) ((req :params) :client_id))
+         client_secret (if basic (last basic) ((req :params) :client_secret))
+         client (authenticator client_id client_secret)]
+     (if client
+       (success req client)
+       (error-response "invalid_client"))))
 
-(defn grant-type
-  "extract grant type from request"
-  [req _] ((req :params) :grant_type))
+ (defn grant-type
+   "extract grant type from request"
+   [req _] ((req :params) :grant_type))
 
-(defmulti token-request-handler grant-type)
+ (defmulti token-request-handler grant-type)
 
-(defmethod token-request-handler "client_credentials"
-  [req {:keys [client-authenticator token-creator]}]
-  (client-authenticated-request
-   req
-   client-authenticator
-   (fn [req client] (respond-with-new-token token-creator client client))))
+ (defmethod token-request-handler "client_credentials"
+   [req {:keys [client-authenticator token-creator]}]
+   (client-authenticated-request
+    req
+    client-authenticator
+    (fn [req client] (respond-with-new-token token-creator client client))))
 
-(defmethod token-request-handler "authorization_code"
-  [req {:keys [client-authenticator token-creator
-               auth-code-lookup auth-code-revoker]}]
-  (client-authenticated-request
-   req
-   client-authenticator
-   (fn [req client]
-     (if-let [code (auth-code-lookup ((req :params) :code))]
-       (if (and  (= (:client-id client) (:client-id (:client code)))
-                 (= (:redirect-uri code) ((req :params) :redirect_uri)))
-         (let [_ (auth-code-revoker code)
-               token (token-creator
-                      client (:subject code) (:scope code) (:object code))]
-           (token-response token))
-         (error-response "invalid_grant"))
-       (error-response "invalid_grant")))))
+ (defmethod token-request-handler "authorization_code"
+   [req {:keys [client-authenticator token-creator
+                auth-code-lookup auth-code-revoker]}]
+   (client-authenticated-request
+    req
+    client-authenticator
+    (fn [req client]
+      (if-let [code (auth-code-lookup ((req :params) :code))]
+        (if (and  (= (:client-id client) (:client-id (:client code)))
+                  (= (:redirect-uri code) ((req :params) :redirect_uri)))
+          (let [_ (auth-code-revoker code)
+                token (token-creator
+                       client (:subject code) (:scope code) (:object code))]
+            (token-response token))
+          (error-response "invalid_grant"))
+        (error-response "invalid_grant")))))
 
-(defmethod token-request-handler "password"
-  [req {:keys [client-authenticator token-creator user-authenticator]}]
-  (client-authenticated-request
-   req
-   client-authenticator
-   (fn [req client] (if-let [user (user-authenticator
-                                   ((req :params) :username)
-                                   ((req :params) :password))]
-                      (respond-with-new-token token-creator client user)
-                      (error-response "invalid_grant")))))
+ (defmethod token-request-handler "password"
+   [req {:keys [client-authenticator token-creator user-authenticator]}]
+   (client-authenticated-request
+    req
+    client-authenticator
+    (fn [req client] (if-let [user (user-authenticator
+                                    ((req :params) :username)
+                                    ((req :params) :password))]
+                       (respond-with-new-token token-creator client user)
+                       (error-response "invalid_grant")))))
 
-(defmethod token-request-handler :default [req _]
-  (error-response "unsupported_grant_type"))
+ (defmethod token-request-handler :default [req _]
+   (error-response "unsupported_grant_type"))
 
 
-(defn token-handler
-  "Ring handler that issues oauth tokens.
+ (defn token-handler
+   "Ring handler that issues oauth tokens.
 
-   Configure it by passing an optional map containing:
+    Configure it by passing an optional map containing:
 
-   :client-authenticator a function that returns a client record when passed a
-    correct client_id and client secret combo
-   :user-authenticator a function that returns a user when passwed a correct
-    username and password combo
-   :auth-code-lookup  a function which returns a auth code record when passed
-    it's code string
-   :token-creator a function that creates a new token when passed a client and
-    a user
-   :auth-code-revoker a function that revokes a auth-code when passed an
-    auth-code record"
-  ([]
-     (token-handler {}))
-  ([client-authenticator user-authenticator]
-     (token-handler {:client-authenticator client-authenticator
-                     :user-authenticator user-authenticator}))
-  ([config]
-     (fn [req]
-       (token-request-handler
-        req
-        (merge {:client-authenticator clauth.client/authenticate-client
-                :user-authenticator clauth.user/authenticate-user
+    :client-authenticator a function that returns a client record when passed a
+     correct client_id and client secret combo
+    :user-authenticator a function that returns a user when passwed a correct
+     username and password combo
+    :auth-code-lookup  a function which returns a auth code record when passed
+     it's code string
+    :token-creator a function that creates a new token when passed a client and
+     a user
+    :auth-code-revoker a function that revokes a auth-code when passed an
+     auth-code record"
+   ([]
+      (token-handler {}))
+   ([client-authenticator user-authenticator]
+      (token-handler {:client-authenticator client-authenticator
+                      :user-authenticator user-authenticator}))
+   ([config]
+      (fn [req]
+        (token-request-handler
+         req
+        (merge {:client-authenticator client/authenticate-client
+                :user-authenticator user/authenticate-user
                 :token-creator create-token
                 :auth-code-revoker revoke-auth-code!
                 :auth-code-lookup fetch-auth-code} config)))))
@@ -163,11 +160,11 @@
    :token-creator a function that creates a new token when passed a client and
     a user"
   [config]
-  (let [config (merge {:login-form login-form-handler
+  (let [config (merge {:login-form views/login-form-handler
                        :user-authenticator clauth.user/authenticate-user
                        :token-creator clauth.token/create-token} config)
         {:keys [client login-form user-authenticator token-creator]} config]
-    (csrf-protect!
+    (mw/csrf-protect!
      (fn [{:keys [request-method params session] :as req}]
        (if (= :get request-method)
          (login-form req)
@@ -217,7 +214,7 @@
   [req error]
   (if ((req :params) :redirect_uri)
     (authorization-response req {"error" error})
-    (error-page error)))
+    (views/error-page error)))
 
 (defn response-type
   "extract grant type from request"
@@ -262,15 +259,15 @@
   ([]
      (authorization-handler {}))
   ([config]
-     (let [config (merge {:authorization-form authorization-form-handler
+     (let [config (merge {:authorization-form views/authorization-form-handler
                           :client-lookup clauth.client/fetch-client
                           :token-lookup clauth.token/fetch-token
                           :token-creator clauth.token/create-token
                           :auth-code-creator clauth.auth-code/create-auth-code}
                          config)
            authorization-form (config :authorization-form)]
-       (require-user-session!
-        (csrf-protect!
+       (mw/require-user-session!
+        (mw/csrf-protect!
          (fn [{:keys [params] :as req}]
            (if (and (params :response_type) (params :client_id))
              (if (some (partial = (params :response_type)) ["code" "token"])

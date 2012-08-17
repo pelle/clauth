@@ -1,10 +1,7 @@
 (ns clauth.auth-code
-  (:use [clauth.store]
-        [clauth.token])
-  (:require [crypto.random]
-            [clj-time.core :as time]
-            [clj-time.coerce]
-            [cheshire.core]))
+  (:require [clauth.store :as store]
+            [clauth.token :as token]
+            [clj-time.core :as time]))
 
 (defrecord OAuthCode [code client subject redirect-uri expires scope object])
 
@@ -35,38 +32,39 @@
   ([client subject redirect-uri]
      (oauth-code client subject redirect-uri nil nil))
   ([client subject redirect-uri scope object]
-     (oauth-code (generate-token) client subject redirect-uri scope object))
+     (oauth-code (token/generate-token)
+                 client subject redirect-uri scope object))
   ([code client subject redirect-uri scope object]
      (OAuthCode. code client subject redirect-uri
                  (clj-time.coerce/to-date (time/plus (time/now) (time/days 1)))
                  scope object)))
 
-(defonce auth-code-store (atom (create-memory-store)))
+(defonce auth-code-store (atom (store/create-memory-store)))
 
 (defn reset-auth-code-store!
   "mainly for used in testing. Clears out all auth-codes."
   []
-  (reset-store! @auth-code-store))
+  (store/reset-store! @auth-code-store))
 
 (defn fetch-auth-code
   "Find OAuth auth-code based on the auth-code string"
   [t]
-  (oauth-code (fetch @auth-code-store t)))
+  (oauth-code (store/fetch @auth-code-store t)))
 
 (defn revoke-auth-code!
   "Revoke the auth code so it can no longer be used"
   [code]
-  (revoke! @auth-code-store (:code code)))
+  (store/revoke! @auth-code-store (:code code)))
 
 (defn store-auth-code
   "Store the given OAuthCode and return it."
   [t]
-  (store! @auth-code-store :code t))
+  (store/store! @auth-code-store :code t))
 
 (defn auth-codes
   "Sequence of auth-codes"
   []
-  (map oauth-code (entries @auth-code-store)))
+  (map oauth-code (store/entries @auth-code-store)))
 
 (defn create-auth-code
   "create a unique auth-code and store it in the auth-code store"
@@ -81,4 +79,4 @@
   "return a auth-code from the store if it is valid."
   [t]
   (if-let [oauth-code (fetch-auth-code t)]
-    (if (is-valid? oauth-code) oauth-code)))
+    (if (token/is-valid? oauth-code) oauth-code)))

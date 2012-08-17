@@ -1,7 +1,6 @@
 (ns clauth.store.redis
-  (:use [clauth.store])
-  (:require [redis.core :as redis]
-            [cheshire.core]))
+  (:require [clauth.store :refer [Store]]
+            [redis.core :as redis]))
 
 (defn namespaced-keys
   "get namespaced list of keys"

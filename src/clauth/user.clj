@@ -1,9 +1,9 @@
 (ns clauth.user
-  (:use [clauth.store])
-  (:require [cheshire.core])
+  (:require [clauth.store :as store]
+            [cheshire.core :as cheshire])
   (:import [org.mindrot.jbcrypt BCrypt]))
 
-(defonce user-store (atom (create-memory-store)))
+(defonce user-store (atom (store/create-memory-store)))
 
 (defrecord User [login password name url])
 
@@ -24,7 +24,7 @@
       (nil? attrs) nil
       (instance? User attrs) attrs
       (instance? java.lang.String attrs) (new-user
-                                          (cheshire.core/parse-string
+                                          (cheshire/parse-string
                                            attrs true))
       :default (User. (attrs :login) (attrs :password) (attrs :name)
                       (attrs :url))))
@@ -34,22 +34,22 @@
 (defn reset-user-store!
   "mainly for used in testing. Clears out all users."
   []
-  (reset-store! @user-store))
+  (store/reset-store! @user-store))
 
 (defn fetch-user
   "Find user based on login"
   [t]
-  (new-user (fetch @user-store t)))
+  (new-user (store/fetch @user-store t)))
 
 (defn store-user
   "Store the given User and return it."
   [t]
-  (store! @user-store :login t))
+  (store/store! @user-store :login t))
 
 (defn users
   "Sequence of users"
   []
-  (entries @user-store))
+  (store/entries @user-store))
 
 (defn register-user
   "create a unique user and store it in the user store"

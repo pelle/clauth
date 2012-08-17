@@ -1,23 +1,24 @@
 (ns clauth.demo
-  (:use [clauth.middleware]
-        [clauth.endpoints]
-        [clauth.client]
-        [clauth.token]
-        [clauth.user]
-        [clauth.auth-code]
-        [clauth.store.redis]
-        [ring.adapter.jetty]
-        [ring.middleware.cookies]
-        [ring.middleware.session]
-        [ring.middleware.params]
-        [ring.middleware.keyword-params]
-        [hiccup.bootstrap.middleware]
-        [hiccup.bootstrap.page]
-        [hiccup.page]
-        [hiccup.element]))
+  (:require [clauth.middleware :as mw]
+            [clauth.endpoints :as ep]
+            [clauth.client :refer [client-store clients register-client]]
+            [clauth.token :refer [token-store]]
+            [clauth.user :refer [user-store]]
+            [clauth.auth-code :refer [auth-code-store]]
+            [clauth.store.redis :refer [create-redis-store with-redis
+                                        wrap-redis]]
+            [ring.adapter.jetty :refer [run-jetty]]
+            [ring.middleware.cookies :refer [wrap-cookies]]
+            [ring.middleware.session :refer [wrap-session]]
+            [ring.middleware.params :refer [wrap-params]]
+            [ring.middleware.keyword-params :refer [wrap-keyword-params]]
+            [hiccup.bootstrap.middleware :refer [wrap-bootstrap-resources]]
+            [hiccup.bootstrap.page :refer [include-bootstrap fixed-layout]]
+            [hiccup.page :refer [html5]]
+            [hiccup.element :refer [link-to unordered-list]]))
 
 (defn nav-menu [req]
-  (if (logged-in? req)
+  (if (ep/logged-in? req)
     [(link-to "/logout" "Logout")]
     [(link-to "/login" "Login")]))
 
@@ -44,7 +45,7 @@
 (defn handler
   "dummy ring handler. Returns json with the token if present."
   [req]
-  (if-html req
+  (mw/if-html req
     (use-layout req nil (clauth.views/hello-world req))
     {:status 200
      :headers {"Content-Type" "application/json"}
@@ -59,13 +60,13 @@
       ;; (prn req)
       (case
        (req :uri)
-       "/token" ((token-handler) req)
+       "/token" ((ep/token-handler) req)
        "/authorization" (use-layout req "Authorize App"
-                                    ((authorization-handler) req))
+                                    ((ep/authorization-handler) req))
        "/login" (use-layout req "Login"
-                            ((login-handler {:client master-client}) req))
-       "/logout" (logout-handler req)
-       ((require-bearer-token! handler) req)))))
+                            ((ep/login-handler {:client master-client}) req))
+       "/logout" (ep/logout-handler req)
+       ((mw/require-bearer-token! handler) req)))))
 
 
 (defn -main

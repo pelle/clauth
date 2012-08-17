@@ -1,6 +1,5 @@
 (ns clauth.middleware
-  (:use [clauth.token]
-        [ring.util.response :only [redirect]]))
+  (:require [ring.util.response :refer [redirect]]))
 
 (defn wrap-bearer-token
   "Wrap request with a OAuth2 bearer token as defined in
