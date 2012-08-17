@@ -1,28 +1,26 @@
 (ns clauth.token
-    (:use [clauth.store])
-    (:require [crypto.random]
-              [clj-time.core :as time]
-              [clj-time.coerce]
-              [cheshire.core]))
+  (:require [clauth.store :as store]
+            [crypto.random :as random]
+            [clj-time
+             [core :as time]
+             [coerce :as coerce]]
+            [cheshire.core :as cheshire]))
 
 (defprotocol Expirable
   "Check if object is valid"
-  (is-valid? [ t ] "is the object still valid"))
+  (is-valid? [t] "is the object still valid"))
 
-(extend-protocol Expirable clojure.lang.IPersistentMap 
+(extend-protocol Expirable clojure.lang.IPersistentMap
   (is-valid? [t] (if-let [expiry (:expires t)]
-                          (time/after? (clj-time.coerce/to-date-time expiry) (time/now) )
-                          true)))
+                   (time/after? (coerce/to-date-time expiry)
+                                (time/now))
+                   true)))
 
-(extend-protocol Expirable nil 
-  (is-valid? [t] false))
+(extend-protocol Expirable nil (is-valid? [t] false))
 
-(defrecord OAuthToken
-  [token client subject expires scope object])
+(defrecord OAuthToken [token client subject expires scope object])
 
-(defn generate-token 
-  "generate a unique token"
-  [] (crypto.random/base32 20))
+(defn generate-token "generate a unique token" [] (random/base32 20))
 
 (defn oauth-token
   "The oauth-token defines supports various functions to verify the validity
@@ -37,58 +35,56 @@
   * object  - An optional object authorized. Eg. account, photo"
 
   ([attrs] ; Swiss army constructor. There must be a better way.
-    (cond
+     (cond
       (nil? attrs) nil
       (instance? OAuthToken attrs) attrs
-      (instance? java.lang.String attrs) (oauth-token (cheshire.core/parse-string attrs true))
-      :default (OAuthToken. (attrs :token) (attrs :client) (attrs :subject) (attrs :expires) (attrs :scope) (attrs :object))))
+      (instance? java.lang.String attrs) (oauth-token
+                                          (cheshire/parse-string
+                                           attrs true))
+      :default (OAuthToken. (attrs :token) (attrs :client) (attrs :subject)
+                            (attrs :expires) (attrs :scope) (attrs :object))))
   ([client subject]
-    (oauth-token client subject nil nil nil)
-    )
+     (oauth-token client subject nil nil nil))
   ([client subject expires scope object]
-    (oauth-token (generate-token) client subject expires scope object)
-    )
+     (oauth-token (generate-token) client subject expires scope object))
   ([token client subject expires scope object]
-    (OAuthToken. token client subject expires scope object)
-    )
-  )
+     (OAuthToken. token client subject expires scope object)))
 
-(defonce token-store (atom (create-memory-store)))
+(defonce token-store (atom (store/create-memory-store)))
 
 (defn reset-token-store!
   "mainly for used in testing. Clears out all tokens."
   []
-  (reset-store! @token-store))
+  (store/reset-store! @token-store))
 
 (defn fetch-token
   "Find OAuth token based on the token string"
   [t]
-  (oauth-token (fetch @token-store t)))
+  (oauth-token (store/fetch @token-store t)))
 
 (defn store-token
   "Store the given OAuthToken and return it."
   [t]
-  (store! @token-store :token t))
+  (store/store! @token-store :token t))
 
 (defn tokens
   "Sequence of tokens"
   []
-  (map oauth-token (entries @token-store)))
+  (map oauth-token (store/entries @token-store)))
 
-(defn create-token 
+(defn create-token
   "create a unique token and store it in the token store"
   ([client subject]
-    (create-token (oauth-token client subject)))
+     (create-token (oauth-token client subject)))
   ([client subject scope object]
-    (create-token client subject nil scope object))
+     (create-token client subject nil scope object))
   ([client subject expires scope object]
-    (create-token (oauth-token client subject expires scope object)))
-  ([ token ]
-    (store-token token)
-    ))
-  
+     (create-token (oauth-token client subject expires scope object)))
+  ([token]
+     (store-token token)))
+
 (defn find-valid-token
   "return a token from the store if it is valid."
   [t]
   (if-let [token (fetch-token t)]
-    (if (is-valid? token) token )))
+    (if (is-valid? token) token)))

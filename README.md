@@ -4,7 +4,7 @@
 
 This is a simple OAuth 2 provider that is designed to be used as a primary authentication provider for a Clojure Ring app.
 
-It currently handles OAuth2 bearer authentication and interactive authentication. 
+It currently handles OAuth2 bearer authentication and interactive authentication.
 
 See [draft-ietf-oauth-v2-bearer](http://tools.ietf.org/html/draft-ietf-oauth-v2-bearer-08)
 
@@ -45,7 +45,7 @@ Currently the following Grant types are supported:
 * [Client Credential Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.4)
 * [Resource Owner Password Credential Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.3)
 
-Grant types are implemented using multimethods. To implement one 
+Grant types are implemented using multimethods. To implement one
 
 ```clojure
 (defmethod token-request-handler "my_grant_type" [req authenticator] ...)
@@ -98,7 +98,7 @@ Stores are used to store tokens and will be used to store clients and users as w
 
 There is a generalized protocol called Store and currently a simple memory implementation used for it.
 
-It should be pretty simple to implement this Store with redis, sql, datomic or what have you. 
+It should be pretty simple to implement this Store with redis, sql, datomic or what have you.
 
 It includes a simple Redis implementation.
 
@@ -120,7 +120,7 @@ To use the redis store add the following to your code:
 (reset! user-store (create-redis-store "users"))
 ```
 
-And wrap your handler with a redis connection middleware similar to this: 
+And wrap your handler with a redis connection middleware similar to this:
 
 ```clojure
 (defn wrap-redis-store [app]
@@ -135,12 +135,12 @@ And wrap your handler with a redis connection middleware similar to this:
 
 ## Authorization OAuth Tokens
 
-There is currently a single authorization-handler that handles authorization called authorization-handler. Install it in your routes by convention at "/authorize" or "/oauth/authorize". 
+There is currently a single authorization-handler that handles authorization called authorization-handler. Install it in your routes by convention at "/authorize" or "/oauth/authorize".
 
 ```clojure
 (defn routes [req]
   (case (req :uri)
-    "/authorize" ((authorization-handler) req )
+    "/authorize" ((authorization-handler) req)
     ((require-bearer-token! handler) req)))
 ```
 
@@ -150,28 +150,28 @@ Authorization handler comes with defaults that use the various built in token, u
 (authorization-handler {:authorization-form authorization-form-handler
                         :client-lookup clauth.client/fetch-client
                         :token-lookup clauth.token/fetch-token
-                        :token-creator clauth.token/create-token 
+                        :token-creator clauth.token/create-token
                         :auth-code-creator clauth.auth-code/create-auth-code})
 ```
 
 ## Issuing OAuth Tokens
 
-There is currently a single token-handler that provides token issuance called token-handler. Install it in your routes by convention at "/token" or "/oauth/token". 
+There is currently a single token-handler that provides token issuance called token-handler. Install it in your routes by convention at "/token" or "/oauth/token".
 
 ```clojure
 (defn routes [req]
   (case (req :uri)
-    "/token" ((token-handler) req )
+    "/token" ((token-handler) req)
     ((require-bearer-token! handler) req)))
 ```
 
 Token handler comes with defaults that use the various built in token, user etc. stores. You can override these by passing in a configuration map containing functions.
 
 ```clojure
-(token-handler {:client-authenticator clauth.client/authenticate-client 
+(token-handler {:client-authenticator clauth.client/authenticate-client
                 :user-authenticator clauth.user/authenticate-user
                 :token-creator clauth.token/create-token
-                :auth-code-revoker clauth.auth-code/revoke-auth-code! 
+                :auth-code-revoker clauth.auth-code/revoke-auth-code!
                 :auth-code-lookup clauth.auth-code/fetch-auth-code })
 ```
 
@@ -191,7 +191,7 @@ To use this make sure to wrap the session middleware. We have a login handler en
 (defn routes [master-client]
   (fn [req]
   (case (req :uri)
-    "/login" ((login-handler master-client) req )
+    "/login" ((login-handler master-client) req)
     ((require-bearer-token! handler) req))))
 ```
 
@@ -201,7 +201,7 @@ The master-client is a client record representing your own application. A defaul
 (defn routes [master-client]
   (fn [req]
   (case (req :uri)
-    "/login" ((login-handler my-own-login-form-handler master-client) req )
+    "/login" ((login-handler my-own-login-form-handler master-client) req)
     ((require-bearer-token! handler) req))))
 ```
 
