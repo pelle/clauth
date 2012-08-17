@@ -1,77 +1,76 @@
 (ns clauth.test.store.redis
-  (:require [redis.core :as redis])
-  (:use [clauth.store]
-        [clauth.token]
-        [clauth.client]
-        [clauth.user]
-        [clauth.store.redis]
-        [clojure.test]))
+  (:require [clojure.test :refer :all]
+            [clauth.store.redis :as base]
+            [clauth
+             [store :as store]
+             [token :as token]
+             [client :as client]
+             [user :as user]]
+            [redis.core :as redis]))
 
 (deftest redis-store-implementaiton
   (redis/with-server
     {:host "127.0.0.1"
      :port 6379
      :db 15}
-    (let [st (create-redis-store "testing")]
-      (reset-store! st)
-      (is (= 0 (count (entries st))))
-      (is (= [] (entries st)))
-      (is (nil? (fetch st "item")))
-      (let [item (store! st :key {:key  "item" :hello "world"})]
-        (is (= 1 (count (entries st))))
-        (is (= item (fetch st "item")))
-        (is (= [item] (entries st)))
-        (let [_ (revoke! st "item")]
-          (is (nil? (fetch st "item"))))
-        (do (reset-store! st)
-            (is (= 0 (count (entries st))))
-            (is (= [] (entries st)))
-            (is (nil? (fetch st "item"))))))))
-
+    (let [st (base/create-redis-store "testing")]
+      (store/reset-store! st)
+      (is (= 0 (count (store/entries st))))
+      (is (= [] (store/entries st)))
+      (is (nil? (store/fetch st "item")))
+      (let [item (store/store! st :key {:key  "item" :hello "world"})]
+        (is (= 1 (count (store/entries st))))
+        (is (= item (store/fetch st "item")))
+        (is (= [item] (store/entries st)))
+        (let [_ (store/revoke! st "item")]
+          (is (nil? (store/fetch st "item"))))
+        (do (store/reset-store! st)
+            (is (= 0 (count (store/entries st))))
+            (is (= [] (store/entries st)))
+            (is (nil? (store/fetch st "item"))))))))
 
 (deftest token-store-implementation
   (redis/with-server
     {:host "127.0.0.1"
      :port 6379
      :db 15}
-    (reset! token-store (create-redis-store "tokens"))
-    (reset-token-store!)
-    (is (= 0 (count (tokens))) "starts out empty")
+    (reset! token/token-store (base/create-redis-store "tokens"))
+    (token/reset-token-store!)
+    (is (= 0 (count (token/tokens))) "starts out empty")
     (let
-        [record (oauth-token "my-client" "my-user")]
-      (is (nil? (fetch-token (:token record))))
-      (do (store-token record)
-          (is (= record (fetch-token (:token record))))
-          (is (= 1 (count (tokens))) "added one"))))
-  (reset! token-store (create-memory-store)))
+        [record (token/oauth-token "my-client" "my-user")]
+      (is (nil? (token/fetch-token (:token record))))
+      (do (token/store-token record)
+          (is (= record (token/fetch-token (:token record))))
+          (is (= 1 (count (token/tokens))) "added one"))))
+  (reset! token/token-store (store/create-memory-store)))
 
 (deftest client-store-implementation
   (redis/with-server
     {:host "127.0.0.1"
      :port 6379
      :db 15}
-    (reset! client-store (create-redis-store "clients"))
-    (reset-client-store!)
-    (is (= 0 (count (clients))) "starts out empty")
-    (let [record (client-app)]
-      (is (nil? (fetch-client (:client-id record))))
-      (do (store-client record)
-          (is (= record (fetch-client (:client-id record))))
-          (is (= 1 (count (clients))) "added one"))))
-  (reset! client-store (create-memory-store)))
-
+    (reset! client/client-store (base/create-redis-store "clients"))
+    (client/reset-client-store!)
+    (is (= 0 (count (client/clients))) "starts out empty")
+    (let [record (client/client-app)]
+      (is (nil? (client/fetch-client (:client-id record))))
+      (do (client/store-client record)
+          (is (= record (client/fetch-client (:client-id record))))
+          (is (= 1 (count (client/clients))) "added one"))))
+  (reset! client/client-store (store/create-memory-store)))
 
 (deftest user-store-implementation
   (redis/with-server
     {:host "127.0.0.1"
      :port 6379
      :db 15}
-    (reset! user-store (create-redis-store "users"))
-    (reset-user-store!)
-    (is (= 0 (count (users))) "starts out empty")
-    (let [record (new-user "john@example.com" "password")]
-      (is (nil? (fetch-user "john@example.com")))
-      (do (store-user record)
-          (is (= record (fetch-user "john@example.com")))
-          (is (= 1 (count (users))) "added one"))))
-  (reset! user-store (create-memory-store)))
+    (reset! user/user-store (base/create-redis-store "users"))
+    (user/reset-user-store!)
+    (is (= 0 (count (user/users))) "starts out empty")
+    (let [record (user/new-user "john@example.com" "password")]
+      (is (nil? (user/fetch-user "john@example.com")))
+      (do (user/store-user record)
+          (is (= record (user/fetch-user "john@example.com")))
+          (is (= 1 (count (user/users))) "added one"))))
+  (reset! user/user-store (store/create-memory-store)))

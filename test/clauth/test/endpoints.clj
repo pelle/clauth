@@ -1,37 +1,40 @@
 (ns clauth.test.endpoints
-  (:use [clauth.endpoints]
-        [clauth.token]
-        [clauth.auth-code]
-        [clojure.test]
-        [hiccup.util])
+  (:require [clojure.test :refer :all]
+            [clauth
+             [endpoints :as base]
+             [client :as client]
+             [user :as user]
+             [token :refer :all]
+             [auth-code :refer :all]]
+            [hiccup.util :refer :all])
   (:import [org.apache.commons.codec.binary Base64]))
 
 (deftest token-decoration
-  (is (= (decorate-token {:token "SECRET" :unimportant "forget this"})
+  (is (= (base/decorate-token {:token "SECRET" :unimportant "forget this"})
          {:access_token "SECRET" :token_type "bearer"})))
 
 (deftest token-ring-response
-  (is (= (token-response {:token "SECRET" :unimportant "forget this"})
+  (is (= (base/token-response {:token "SECRET" :unimportant "forget this"})
          {:status 200
           :headers {"Content-Type" "application/json"}
           :body "{\"access_token\":\"SECRET\",\"token_type\":\"bearer\"}"})))
 
 (deftest ring-error-response
-  (is (= (error-response :invalid_request)
+  (is (= (base/error-response :invalid_request)
          {:status 400
           :headers {"Content-Type" "application/json"}
           :body "{\"error\":\"invalid_request\"}"})))
 
 (deftest extract-basic-authenticated-credentials
   (is (= ["user" "password"]
-         (basic-authentication-credentials
+         (base/basic-authentication-credentials
           {:headers {"authorization" "Basic dXNlcjpwYXNzd29yZA=="}}))))
 
 (deftest requesting-client-owner-token
   (reset-token-store!)
-  (clauth.client/reset-client-store!)
-  (let [handler (token-handler)
-        client (clauth.client/register-client)]
+  (client/reset-client-store!)
+  (let [handler (base/token-handler)
+        client (client/register-client)]
     (is (= (handler {:params {:grant_type "client_credentials"
                               :client_id (:client-id client)
                               :client_secret (:client-secret client)}})
@@ -72,11 +75,11 @@
 
 (deftest requesting-resource-owner-password-credentials-token
   (reset-token-store!)
-  (clauth.client/reset-client-store!)
-  (clauth.user/reset-user-store!)
-  (let [handler (token-handler)
-        client (clauth.client/register-client)
-        user (clauth.user/register-user "john@example.com" "password")]
+  (client/reset-client-store!)
+  (user/reset-user-store!)
+  (let [handler (base/token-handler)
+        client (client/register-client)
+        user (user/register-user "john@example.com" "password")]
     (is (= (handler {:params {:grant_type "password"
                               :username "john@example.com"
                               :password "password"
@@ -143,11 +146,11 @@
 (deftest requesting-authorization-code-token
   (reset-token-store!)
   (reset-auth-code-store!)
-  (clauth.client/reset-client-store!)
-  (clauth.user/reset-user-store!)
-  (let [handler (token-handler)
-        client (clauth.client/register-client)
-        user (clauth.user/register-user "john@example.com" "password")
+  (client/reset-client-store!)
+  (user/reset-user-store!)
+  (let [handler (base/token-handler)
+        client (client/register-client)
+        user (user/register-user "john@example.com" "password")
         scope "calendar"
         redirect_uri "http://test.com/redirect_uri"
         object {:id "stuff"}]
@@ -194,7 +197,7 @@
           "should fail on bad client authentication"))
 
     (let [code (create-auth-code client user redirect_uri "calendar" object)
-          other (clauth.client/register-client)]
+          other (client/register-client)]
       (is (= (handler {:params {:grant_type "authorization_code"
                                 :code (:code code)
                                 :redirect_uri redirect_uri
@@ -259,11 +262,11 @@
 (deftest requesting-authorization-code
   (reset-token-store!)
   (reset-auth-code-store!)
-  (clauth.client/reset-client-store!)
-  (clauth.user/reset-user-store!)
-  (let [handler (authorization-handler)
-        client (clauth.client/register-client)
-        user (clauth.user/register-user "john@example.com" "password")
+  (client/reset-client-store!)
+  (user/reset-user-store!)
+  (let [handler (base/authorization-handler)
+        client (client/register-client)
+        user (user/register-user "john@example.com" "password")
         redirect_uri "http://test.com"
         uri "/authorize"
         params {:response_type "code"
@@ -358,11 +361,11 @@
 
 (deftest requesting-implicit-authorization
   (reset-token-store!)
-  (clauth.client/reset-client-store!)
-  (clauth.user/reset-user-store!)
-  (let [ handler (authorization-handler)
-        client (clauth.client/register-client)
-        user   (clauth.user/register-user "john@example.com" "password")
+  (client/reset-client-store!)
+  (user/reset-user-store!)
+  (let [ handler (base/authorization-handler)
+        client (client/register-client)
+        user   (user/register-user "john@example.com" "password")
         redirect_uri "http://test.com"
         uri "/authorize"
         params {:response_type "token"
@@ -456,9 +459,9 @@
 
 (deftest requesting-unsupported-grant
   (reset-token-store!)
-  (clauth.client/reset-client-store!)
-  (let [handler (token-handler)
-        client (clauth.client/register-client)]
+  (client/reset-client-store!)
+  (let [handler (base/token-handler)
+        client (client/register-client)]
 
     (is (= (handler {:params {:grant_type "telepathy"}})
            {:status 400
@@ -474,12 +477,12 @@
 
 (deftest interactive-login-session
   (reset-token-store!)
-  (clauth.client/reset-client-store!)
-  (clauth.user/reset-user-store!)
-  (let [client (clauth.client/register-client)
-        handler (login-handler {:login-form (fn [_] {:body "login form"})
+  (client/reset-client-store!)
+  (user/reset-user-store!)
+  (let [client (client/register-client)
+        handler (base/login-handler {:login-form (fn [_] {:body "login form"})
                                 :client client})
-        user (clauth.user/register-user "john@example.com" "password")
+        user (user/register-user "john@example.com" "password")
         response (handler {:request-method :post
                            :session {:csrf-token "csrftoken"}
                            :params {:username "john@example.com"
@@ -521,13 +524,13 @@
 
 (deftest login-helpers
   (let [req {}]
-    (is (not (logged-in? req)) "should not be marked as logged in")
-    (is (nil? (current-user req)) "should not have a current user"))
+    (is (not (base/logged-in? req)) "should not be marked as logged in")
+    (is (nil? (base/current-user req)) "should not have a current user"))
 
-  (let [client (clauth.client/register-client)
-        user (clauth.user/register-user "john@example.com" "password")
+  (let [client (client/register-client)
+        user (user/register-user "john@example.com" "password")
         session-token (create-token client user)
         req {:access-token session-token}]
-    (is (logged-in? req) "should be marked as logged in")
-    (is (= (current-user req) user) "should have a current user")))
+    (is (base/logged-in? req) "should be marked as logged in")
+    (is (= (base/current-user req) user) "should have a current user")))
 
