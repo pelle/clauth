@@ -19,8 +19,7 @@
 (defn nav-menu [req]
   (if (logged-in? req)
     [(link-to "/logout" "Logout")]
-    [(link-to "/login" "Login")]
-    ))
+    [(link-to "/login" "Login")]))
 
 (defn layout [req title & body]
   (html5
@@ -37,12 +36,12 @@
         [:h1 (or title "Clauth demo")]
         body)]))
 
-(defn use-layout 
+(defn use-layout
   "Wrap a response with a layout"
   [req title response]
   (assoc response :body (layout req title (response :body))))
 
-(defn handler 
+(defn handler
   "dummy ring handler. Returns json with the token if present."
   [req]
   (if-html req
@@ -51,28 +50,33 @@
      :headers {"Content-Type" "application/json"}
      :body (if-let [token (req :access-token)]
                   (str "{\"token\":\"" (str (:token token)) "\"}")
-                  "{}"
-          )}))
+                  "{}")}))
 
 (defn routes [master-client]
   (fn [req]
     (do
-      ; (prn (req :session))
-      ; (prn req)
-    (case (req :uri)
-      "/token" ((token-handler) req )
-      "/authorization" (use-layout req "Authorize App" ((authorization-handler) req ))
-      "/login" (use-layout req "Login" ((login-handler {:client master-client}) req ))
-      "/logout" (logout-handler req )
-      ((require-bearer-token! handler) req)))))
+      ;; (prn (req :session))
+      ;; (prn req)
+      (case
+       (req :uri)
+       "/token" ((token-handler) req)
+       "/authorization" (use-layout req "Authorize App"
+                                    ((authorization-handler) req))
+       "/login" (use-layout req "Login"
+                            ((login-handler {:client master-client}) req))
+       "/logout" (logout-handler req)
+       ((require-bearer-token! handler) req)))))
 
 
-(defn -main 
-  "start web server. This first wraps the request in the cookies and params middleware, then requires a bearer token.
+(defn -main
+  "start web server. This first wraps the request in the cookies and params
+   middleware, then requires a bearer token.
 
-  The function passed in this example to require-bearer-token is a clojure set containing the single value \"secret\".
+   The function passed in this example to require-bearer-token is a clojure set
+   containing the single value \"secret\".
 
-  You could instead use a hash for a simple in memory token database or a function querying a database."
+   You could instead use a hash for a simple in memory token database or a
+   function querying a database."
   []
   (try
     (do
@@ -81,26 +85,32 @@
       (reset! client-store (create-redis-store "clients"))
       (reset! user-store (create-redis-store "users"))
       (with-redis
-      (let [client ( or (first (clients)) (register-client "Clauth Demo" "http://pelle.github.com/clauth"))
-              user ( or (first (clauth.user/users)) (clauth.user/register-user "demo" "password"))]
-        (println "App starting up:")
-        (prn client)
-        (println "Token endpoint /token")
-        (println)
-        (println "Fetch a Client Credentialed access token:")
-        (println)
-        (println "curl http://127.0.0.1:3000/token -d grant_type=client_credentials -u " (clojure.string/join ":" [(:client-id client) (:client-secret client)]) )
-        (println)
-        (println "Interactive login with demo/password")
-        (println)
-        (println "http://127.0.0.1:3000/login")
+        (let [client (or (first (clients))
+                         (register-client "Clauth Demo"
+                                          "http://pelle.github.com/clauth"))
+              user (or (first (clauth.user/users))
+                       (clauth.user/register-user "demo" "password"))]
+          (println "App starting up:")
+          (prn client)
+          (println
+           (str "Token endpoint /token\n\n"
+                "Fetch a Client Credentialed access token:\n\n"
+                "curl http://127.0.0.1:3000/token "
+                "-d grant_type=client_credentials -u "
+                (clojure.string/join ":" [(:client-id client)
+                                          (:client-secret client)])
+                "\n\n"
+                "Interactive login with demo/password\n\n"
+                "http://127.0.0.1:3000/login"))
 
-        (run-jetty (-> (routes client)
-                     (wrap-keyword-params) 
-                     (wrap-params) 
-                     (wrap-cookies)
-                     (wrap-session)                
-                     (wrap-redis)
-                     (wrap-bootstrap-resources)) {:port 3000}))))
-      (catch java.net.ConnectException e
-        (println "You don't have a Redis database running in the background:" (.getMessage e)))))
+          (run-jetty (-> (routes client)
+                         (wrap-keyword-params)
+                         (wrap-params)
+                         (wrap-cookies)
+                         (wrap-session)
+                         (wrap-redis)
+                         (wrap-bootstrap-resources)) {:port 3000}))))
+
+    (catch java.net.ConnectException e
+      (println "You don't have a Redis database running in the background:"
+               (.getMessage e)))))

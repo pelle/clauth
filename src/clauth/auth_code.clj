@@ -1,14 +1,12 @@
 (ns clauth.auth-code
-    (:use [clauth.store]
-          [clauth.token])
-    (:require [crypto.random]
-              [clj-time.core :as time]
-              [clj-time.coerce]
-              [cheshire.core]))
+  (:use [clauth.store]
+        [clauth.token])
+  (:require [crypto.random]
+            [clj-time.core :as time]
+            [clj-time.coerce]
+            [cheshire.core]))
 
-
-(defrecord OAuthCode
-  [code client subject redirect-uri expires scope object])
+(defrecord OAuthCode [code client subject redirect-uri expires scope object])
 
 (defn oauth-code
   "The oauth-code defines supports various functions to verify the validity
@@ -24,21 +22,24 @@
   * object  - An optional object authorized. Eg. account, photo"
 
   ([attrs] ; Swiss army constructor. There must be a better way.
-    (cond
+     (cond
       (nil? attrs) nil
       (instance? OAuthCode attrs) attrs
-      (instance? java.lang.String attrs) (oauth-code (cheshire.core/parse-string attrs true))
-      :default (OAuthCode. (attrs :code) (attrs :client) (attrs :subject) (attrs :redirect-uri) (attrs :expires) (attrs :scope) (attrs :object))))
+      (instance? java.lang.String attrs) (oauth-code
+                                          (cheshire.core/parse-string
+                                           attrs true))
+      :default (OAuthCode.
+                (attrs :code) (attrs :client) (attrs :subject)
+                (attrs :redirect-uri) (attrs :expires) (attrs :scope)
+                (attrs :object))))
   ([client subject redirect-uri]
-    (oauth-code client subject redirect-uri nil nil)
-    )
+     (oauth-code client subject redirect-uri nil nil))
   ([client subject redirect-uri scope object]
-    (oauth-code (generate-token) client subject redirect-uri scope object)
-    )
+     (oauth-code (generate-token) client subject redirect-uri scope object))
   ([code client subject redirect-uri scope object]
-    (OAuthCode. code client subject redirect-uri (clj-time.coerce/to-date (time/plus (time/now) (time/days 1))) scope object)
-    )
-  )
+     (OAuthCode. code client subject redirect-uri
+                 (clj-time.coerce/to-date (time/plus (time/now) (time/days 1)))
+                 scope object)))
 
 (defonce auth-code-store (atom (create-memory-store)))
 
@@ -67,18 +68,17 @@
   []
   (map oauth-code (entries @auth-code-store)))
 
-(defn create-auth-code 
+(defn create-auth-code
   "create a unique auth-code and store it in the auth-code store"
   ([client subject redirect-uri]
-    (create-auth-code (oauth-code client subject redirect-uri)))
+     (create-auth-code (oauth-code client subject redirect-uri)))
   ([client subject redirect-uri scope object]
-    (create-auth-code (oauth-code client subject redirect-uri scope object)))
-  ([ auth-code ]
-    (store-auth-code auth-code)
-    ))
-  
+     (create-auth-code (oauth-code client subject redirect-uri scope object)))
+  ([auth-code]
+     (store-auth-code auth-code)))
+
 (defn find-valid-auth-code
   "return a auth-code from the store if it is valid."
   [t]
   (if-let [oauth-code (fetch-auth-code t)]
-    (if (is-valid? oauth-code) oauth-code )))
+    (if (is-valid? oauth-code) oauth-code)))
