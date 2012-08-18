@@ -64,7 +64,7 @@
   "returns true if request has form in the accept header"
   [req]
   (if (or (not (:access-token req)) (and (:access-token req) (:access_token (req :session {}))))
-    (if-let [content-type (req :content-type)]
+    (if-let [content-type (req "content-type")]
       (if (seq (filter (partial  = content-type) ["application/x-www-form-urlencoded" "multipart/form-data"])) true))))
 
 (defmacro if-html
