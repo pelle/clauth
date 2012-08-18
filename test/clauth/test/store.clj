@@ -1,25 +1,19 @@
 (ns clauth.test.store
-  (:use [clauth.store]
-        [clojure.test]))
-  
+  (:require [clojure.test :refer :all]
+            [clauth.store :as base]))
 
-
-  (deftest memory-store-implementaiton
-    (let [st (create-memory-store)]
-      (is (= 0 (count (entries st))))
-      (is (= [] (entries st)))
-      (is (nil? (fetch st "item")))
-
-      (let [item (store! st :key {:key  "item" :hello "world"})]
-        (is (= 1 (count (entries st))))
-        (is (= item (fetch st "item")))
-        (is (= [item] (entries st)))
-        (let [_ (revoke! st "item")]
-          (is (nil? (fetch st "item"))))
-        (do
-          (reset-store! st)
-          (is (= 0 (count (entries st))))
-          (is (= [] (entries st)))
-          (is (nil? (fetch st "item")))))))
-
- 
+(deftest memory-store-implementaiton
+  (let [st (base/create-memory-store)]
+    (is (= 0 (count (base/entries st))))
+    (is (= [] (base/entries st)))
+    (is (nil? (base/fetch st "item")))
+    (let [item (base/store! st :key {:key  "item" :hello "world"})]
+      (is (= 1 (count (base/entries st))))
+      (is (= item (base/fetch st "item")))
+      (is (= [item] (base/entries st)))
+      (let [_ (base/revoke! st "item")]
+        (is (nil? (base/fetch st "item"))))
+      (do (base/reset-store! st)
+          (is (= 0 (count (base/entries st))))
+          (is (= [] (base/entries st)))
+          (is (nil? (base/fetch st "item")))))))
