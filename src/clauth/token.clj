@@ -67,6 +67,13 @@
   [t]
   (store/store! @token-store :token t))
 
+(defn revoke-token
+  "Revoke the given OAuth token, given either a token string or object."
+  [t]
+  (cond
+   (instance? java.lang.String t) (store/revoke! @token-store t)
+   :default (store/revoke! @token-store (:token t))))
+
 (defn tokens
   "Sequence of tokens"
   []
