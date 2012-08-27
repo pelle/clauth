@@ -36,4 +36,7 @@
     (is (nil? (base/fetch-token (:token record))))
     (do (base/store-token record)
         (is (= record (base/fetch-token (:token record))))
-        (is (= 1 (count (base/tokens))) "added one"))))
+        (is (= 1 (count (base/tokens))) "added one"))
+    (do (base/revoke-token record)
+        (is (= nil (base/fetch-token (:token record))))
+        (is (= 0 (count (base/tokens))) "revoked one"))))
