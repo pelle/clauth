@@ -13,4 +13,7 @@
                      [lein-marginalia "0.7.0"]
                      [org.clojars.tavisrudd/redis-clojure "1.3.1"]
                      [hiccup-bootstrap "0.1.0"]]
+  :profiles
+  {:dev 
+   {:dependencies [[org.clojars.tavisrudd/redis-clojure "1.3.1"]]}}
   :clean-non-project-classes true)
