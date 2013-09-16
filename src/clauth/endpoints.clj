@@ -145,6 +145,7 @@
                 :auth-code-revoker revoke-auth-code!
                 :auth-code-lookup fetch-auth-code} config)))))
 
+
 (defn login-handler
   "Present a login form to user and log them in by adding an access token to
    the session.
@@ -209,7 +210,6 @@
                                       (filter val
                                               (select-keys (req :params)
                                                            [:state]))))))))
-
 (defn authorization-error-response
   "redirect to client with error code"
   [req error]
@@ -262,7 +262,7 @@
   ([config]
      (let [config (merge {:authorization-form views/authorization-form-handler
                           :client-lookup clauth.client/fetch-client
-                          :token-lookup clauth.token/fetch-token
+                          :token-lookup clauth.token/find-valid-token
                           :token-creator clauth.token/create-token
                           :auth-code-creator clauth.auth-code/create-auth-code}
                          config)
