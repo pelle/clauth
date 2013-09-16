@@ -276,4 +276,5 @@
                  (authorization-form req)
                  (authorization-request-handler req config))
                (authorization-error-response req "unsupported_response_type"))
-             (authorization-error-response req "invalid_request"))))))))
+             (authorization-error-response req "invalid_request"))))
+        (:token-lookup config)))))
