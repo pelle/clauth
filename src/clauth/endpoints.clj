@@ -146,6 +146,19 @@
                 :auth-code-lookup fetch-auth-code} config)))))
 
 
+(defn return-to-handler
+  "Return to value of :return-to key session or the contents of defaukt-destination (by default '/')"
+  ([req]
+    (return-to-handler req "/"))
+
+
+  ([req default-destination]
+
+    (let [session (:session req)
+          destination (:return-to session default-destination)]
+      (-> (redirect destination)
+          (assoc :session (dissoc session :return-to))))))
+
 (defn login-handler
   "Present a login form to user and log them in by adding an access token to
    the session.
@@ -156,31 +169,27 @@
    :client the site's own client application record
 
    Optional entries to customize functionality:
+   :login-destination Where to redirect the user to after login (default '/')
    :login-form a ring handler to display a login form
    :user-authenticator a function that returns a user when passwed a correct
     username and password combo
    :token-creator a function that creates a new token when passed a client and
     a user"
   [config]
-  (let [config (merge {:login-form views/login-form-handler
+  (let [config (merge {:login-destination "/"
+                       :login-form views/login-form-handler
                        :user-authenticator clauth.user/authenticate-user
                        :token-creator clauth.token/create-token} config)
-        {:keys [client login-form user-authenticator token-creator]} config]
+        {:keys [client login-form user-authenticator token-creator login-destination]} config]
     (mw/csrf-protect!
      (fn [{:keys [request-method params session] :as req}]
        (if (= :get request-method)
          (login-form req)
          (if-let [user (user-authenticator (params :username)
                                            (params :password))]
-           (let
-               [destination (session :return-to "/")
-                session (dissoc (assoc session :access_token
-                                       (:token (token-creator client user)))
-                                :return-to)]
-             {:status 302
-              :headers {"Content-Type" "text/html" "Location" destination}
-              :session session
-              :body "Redirecting to /"})
+
+           (-> (return-to-handler req login-destination)
+               (assoc-in [:session :access_token] (:token (token-creator client user))))
            (login-form req)))))))
 
 (defn logout-handler

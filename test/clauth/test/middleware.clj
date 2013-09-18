@@ -2,6 +2,27 @@
   (:require [clojure.test :refer :all]
             [clauth.middleware :as base]))
 
+(deftest extract-requested-uri
+  (is (= "/"
+         (base/requested-uri {})))
+  (is (= "/hello"
+         (base/requested-uri {:uri "/hello"})))
+  (is (= "/hello?one=1&two=2"
+         (base/requested-uri {:uri "/hello" :query-string "one=1&two=2"}))))
+
+(deftest assoc-session-value
+  (is (= {:session {:hello 1}}
+         (base/assoc-session {} {} :hello 1)))
+
+  (is (= {:session {:hello 1 :old 2}}
+         (base/assoc-session {} {:session {:old 2}} :hello 1)))
+
+    (is (= {:session {:hello 1 :old 3}}
+         (base/assoc-session {:session {:old 3}} {:session {:old 2}} :hello 1)))
+
+    (is (= {:session {:old 4}}
+         (base/assoc-session {:session {:old 3}} {:session {:old 2}} :old 4))))
+
 (deftest bearer-token-from-header
   ;; authorization success adds oauth-token on request map
   (is (= "secrettoken"

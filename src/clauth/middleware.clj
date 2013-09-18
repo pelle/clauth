@@ -2,6 +2,44 @@
   (:require [ring.util.response :refer [redirect]]
             [clauth.token :as token]))
 
+(defn requested-uri [req]
+  (if (req :query-string)
+    (str (:uri req "/") "?" (req :query-string))
+    (:uri req "/")))
+
+(defn assoc-session
+  "Add session varia"
+  [response req attr value]
+  (let [session (assoc (or (:session response)
+                    (:session req)
+                    {})
+                  attr value)]
+    (assoc response :session session)))
+
+
+(defn req->session-token-string
+  "Return the token string from a session"
+  [req]
+  (let [session (:session req {})]
+    (:access_token session (get-in session [:noir :access_token]))))
+
+(defn req->token-string
+  "Return the token string for a request"
+  [req]
+   (let [auth ((:headers req {}) "authorization") ]
+         (or (last (re-find #"^Bearer (.*)$" (str auth)))
+                   ((:params req {}) :access_token)
+                   ((:params req {}) "access_token")
+                   (req->session-token-string req)
+                   (((:cookies req {}) "access_token" {}) :value))))
+
+(defn req->token
+  ([req]
+   (req->token token/find-valid-token))
+  ([req finder]
+   (if-let [token (req->token-string req)]
+     (finder token))))
+
 (defn wrap-bearer-token
   "Wrap request with a OAuth2 bearer token as defined in
    http://tools.ietf.org/html/draft-ietf-oauth-v2-bearer-08.
@@ -21,16 +59,9 @@
      (wrap-bearer-token app token/find-valid-token))
   ([app find-token]
      (fn [req]
-       (let [auth ((:headers req {}) "authorization")
-             token (or (last
-                        (re-find #"^Bearer (.*)$" (str auth)))
-                       ((:params req {}) :access_token)
-                       ((:params req {}) "access_token")
-                       ((:session req {}) :access_token)
-                       (((:cookies req {}) "access_token" {}) :value))]
-         (if-let [access-token (and token (find-token token))]
-           (app (assoc req :access-token access-token))
-           (app req))))))
+       (if-let [access-token (req->token req find-token)]
+         (app (assoc req :access-token access-token))
+         (app req)))))
 
 (defn wrap-user-session
   "Wrap request with a OAuth2 token stored in the session. Use this for
@@ -46,8 +77,7 @@
      (wrap-user-session app token/find-valid-token))
   ([app find-token]
      (fn [req]
-       (let [auth ((:headers req {}) "authorization")
-             token ((:session req {}) :access_token)]
+       (let [token (req->session-token-string req)]
          (if-let [access-token (find-token token)]
            (app (assoc req :access-token access-token))
            (app req))))))
@@ -102,7 +132,7 @@
              (is-html? req))
       (let [req (with-csrf-token req)]
         (if-let [token (:csrf-token req)]
-          (assoc-in (app req) [:session :csrf-token] token)
+          (assoc-session (app req) req :csrf-token token)
           (app req)))
       (if-form req
                (let [token (csrf-token req)]
@@ -112,11 +142,13 @@
                    {:status 403 :body "csrf token does not match"}))
                (app req)))))
 
+
 (defn authentication-required-response
   "Return HTTP 401 Response"
   [req]
-  (if-html req (assoc (redirect "/login") :session
-                      {:return-to (str (req :uri) "?" (req :query-string))})
+  (if-html req
+           (-> (redirect "/login")
+               (assoc-session req :return-to (requested-uri req)))
            {:status 401
             :headers {"Content-Type" "text/plain"
                       "WWW-Authenticate" "Bearer realm=\"OAuth required\""}
@@ -149,16 +181,12 @@
           (app req)
           (authentication-required-response req))) find-token)))
 
-(defn request-uri [req]
-  (if (req :query-string)
-    (str (req :uri) "?" (req :query-string))
-    (req :uri)))
-
 (defn user-session-required-response
   "Return HTTP 403 Response or redirects to login"
   [req]
   (if-html req
-           (assoc (redirect "/login") :session {:return-to (request-uri req)})
+           (-> (redirect "/login")
+               (assoc-session req :return-to (requested-uri req)))
            {:status 403
             :headers {"Content-Type" "text/plain"}
             :body "Forbidden"}))
