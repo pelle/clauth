@@ -236,7 +236,8 @@
   [req {:keys [client-lookup token-lookup token-creator]}]
   (let [params (req :params)
         client (client-lookup (params :client_id))
-        user (:subject (token-lookup (:access_token (req :session))))
+        token (mw/req->token req token-lookup)
+        user (:subject token)
         token (token-creator client user)]
     (authorization-response req {:access_token (:token token)
                                  :token_type "bearer"})))
@@ -245,7 +246,8 @@
   [req {:keys [client-lookup token-lookup auth-code-creator]}]
   (let [params (req :params)
         client (client-lookup (params :client_id))
-        user (:subject (token-lookup (:access_token (req :session))))
+        token (mw/req->token req token-lookup)
+        user (:subject token)
         code (auth-code-creator client user (:redirect_uri params))]
     (authorization-response req {:code (:code code)})))
 
@@ -275,7 +277,7 @@
                           :token-creator clauth.token/create-token
                           :auth-code-creator clauth.auth-code/create-auth-code}
                          config)
-           authorization-form (config :authorization-form)]
+           authorization-form (config :authorization-form)]       
        (mw/require-user-session!
         (mw/csrf-protect!
          (fn [{:keys [params] :as req}]
