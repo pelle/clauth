@@ -19,6 +19,15 @@
     (is (not (nil? (:token record))) "should include token field")
     (is (= 1 (count (base/tokens))) "added one")
     (is (= record (first (base/tokens))) "added one")
+    (is (= record (base/find-valid-token (:token record)))))
+
+  (let [record (base/create-token {:client "my-client"
+                                   :subject "my-user"})]
+    (is (= "my-client" (:client record)) "should have client")
+    (is (= "my-user" (:subject record)) "should have subject")
+    (is (not (nil? (:token record))) "should include token field")
+    (is (= 2 (count (base/tokens))) "added one")
+    (is (= record (first (base/tokens))) "added one")
     (is (= record (base/find-valid-token (:token record))))))
 
 (deftest token-validity

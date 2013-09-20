@@ -18,8 +18,6 @@
 
 (extend-protocol Expirable nil (is-valid? [t] false))
 
-(defrecord OAuthToken [token client subject expires scope object])
-
 (defn generate-token "generate a unique token" [] (random/base32 20))
 
 (defn oauth-token
@@ -35,20 +33,18 @@
   * object  - An optional object authorized. Eg. account, photo"
 
   ([attrs] ; Swiss army constructor. There must be a better way.
-     (cond
-      (nil? attrs) nil
-      (instance? OAuthToken attrs) attrs
-      (instance? java.lang.String attrs) (oauth-token
-                                          (cheshire/parse-string
-                                           attrs true))
-      :default (OAuthToken. (attrs :token) (attrs :client) (attrs :subject)
-                            (attrs :expires) (attrs :scope) (attrs :object))))
+     (if attrs
+       (if (:token attrs)
+         attrs
+         (assoc attrs :token (generate-token)))
+       )
+     )
   ([client subject]
      (oauth-token client subject nil nil nil))
   ([client subject expires scope object]
      (oauth-token (generate-token) client subject expires scope object))
   ([token client subject expires scope object]
-     (OAuthToken. token client subject expires scope object)))
+     (oauth-token {:token token :client client :subject subject :expires expires :scope scope :object object})))
 
 (defonce token-store (atom (store/create-memory-store)))
 
@@ -88,7 +84,7 @@
   ([client subject expires scope object]
      (create-token (oauth-token client subject expires scope object)))
   ([token]
-     (store-token token)))
+     (store-token (oauth-token token))))
 
 (defn find-valid-token
   "return a token from the store if it is valid."

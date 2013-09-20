@@ -5,8 +5,6 @@
 
 (defonce user-store (atom (store/create-memory-store)))
 
-(defrecord User [login password name url])
-
 (defn bcrypt
   "Perform BCrypt hash of password"
   [password]
@@ -20,16 +18,14 @@
 (defn new-user
   "Create new user record"
   ([attrs] ; Swiss army constructor. There must be a better way.
-     (cond
-      (nil? attrs) nil
-      (instance? User attrs) attrs
-      (instance? java.lang.String attrs) (new-user
-                                          (cheshire/parse-string
-                                           attrs true))
-      :default (User. (attrs :login) (attrs :password) (attrs :name)
-                      (attrs :url))))
+     (if attrs
+       (if (:encrypt-password attrs)
+         (assoc (dissoc attrs :encrypt-password)
+           :password (bcrypt (:encrypt-password attrs)))
+         attrs)))
+  
   ([login password] (new-user login password nil nil))
-  ([login password name url] (User. login (bcrypt password) name url)))
+  ([login password name url] (new-user { :login login :encrypt-password password :name name :url url})))
 
 (defn reset-user-store!
   "mainly for used in testing. Clears out all users."
@@ -53,10 +49,11 @@
 
 (defn register-user
   "create a unique user and store it in the user store"
+  ([attrs]
+     (store-user (new-user attrs)))
   ([login password] (register-user login password nil nil))
   ([login password name url]
-     (let [user (new-user login password name url)]
-       (store-user user))))
+     (register-user (new-user login password name url))))
 
 (defn authenticate-user
   "authenticate user application using login and password"

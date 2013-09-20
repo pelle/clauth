@@ -4,8 +4,6 @@
              [token :as token]]
             [clj-time.core :as time]))
 
-(defrecord OAuthCode [code client subject redirect-uri expires scope object])
-
 (defn oauth-code
   "The oauth-code defines supports various functions to verify the validity
 
@@ -19,26 +17,21 @@
   * scope   - An optional vector of scopes authorized
   * object  - An optional object authorized. Eg. account, photo"
 
-  ([attrs] ; Swiss army constructor. There must be a better way.
-     (cond
-      (nil? attrs) nil
-      (instance? OAuthCode attrs) attrs
-      (instance? java.lang.String attrs) (oauth-code
-                                          (cheshire.core/parse-string
-                                           attrs true))
-      :default (OAuthCode.
-                (attrs :code) (attrs :client) (attrs :subject)
-                (attrs :redirect-uri) (attrs :expires) (attrs :scope)
-                (attrs :object))))
+  ([attrs]
+     (if attrs
+       (let [attrs (if (:code attrs)
+                     attrs
+                     (assoc attrs :code (token/generate-token)))]
+         (if (:expires attrs)
+           attrs
+           (assoc attrs :expires (clj-time.coerce/to-date (time/plus (time/now) (time/days 1))))))))
   ([client subject redirect-uri]
      (oauth-code client subject redirect-uri nil nil))
   ([client subject redirect-uri scope object]
      (oauth-code (token/generate-token)
                  client subject redirect-uri scope object))
   ([code client subject redirect-uri scope object]
-     (OAuthCode. code client subject redirect-uri
-                 (clj-time.coerce/to-date (time/plus (time/now) (time/days 1)))
-                 scope object)))
+     (oauth-code {:code code :client client :subject subject :redirect-uri redirect-uri :scope scope :object object})))
 
 (defonce auth-code-store (atom (store/create-memory-store)))
 
@@ -74,7 +67,7 @@
   ([client subject redirect-uri scope object]
      (create-auth-code (oauth-code client subject redirect-uri scope object)))
   ([auth-code]
-     (store-auth-code auth-code)))
+     (store-auth-code (oauth-code auth-code))))
 
 (defn find-valid-auth-code
   "return a auth-code from the store if it is valid."
