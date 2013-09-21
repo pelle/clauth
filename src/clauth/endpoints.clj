@@ -16,7 +16,8 @@
 
     http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-5.1"
    [token]
-   {:access_token (:token token) :token_type "bearer"})
+   (if token
+     {:access_token (:token token) :token_type "bearer"}))
 
  (defn token-response
    "Create a ring response for a token response"
@@ -35,10 +36,19 @@
  (defn respond-with-new-token
    "create a new token and respond with json. If using built in token system it takes client and subject (user).
     You can also pass a function to it and the client and subject."
+   ([{:keys [token-creator params] :as attrs}]
+      (let [params (or params {})]
+        (token-response
+         (token-creator (merge (select-keys attrs [:client :subject])
+                               (select-keys params [:state :scope]))))))
+   
    ([client subject]
-     (respond-with-new-token create-token client subject))
+      (respond-with-new-token create-token client subject))
+   
    ([token-creator client subject]
-     (token-response (token-creator client subject))))
+      (respond-with-new-token {:client client
+                               :subject subject
+                               :token-creator token-creator})))
 
  (defn basic-authentication-credentials
    "decode basic authentication credentials.
@@ -81,7 +91,10 @@
    (client-authenticated-request
     req
     client-authenticator
-    (fn [req client] (respond-with-new-token token-creator client client))))
+    (fn [req client] (respond-with-new-token {:token-creator token-creator
+                                             :client client
+                                             :subject client
+                                             :params (:params req)}))))
 
  (defmethod token-request-handler "authorization_code"
    [req {:keys [client-authenticator token-creator
@@ -93,10 +106,9 @@
       (if-let [code (auth-code-lookup ((req :params) :code))]
         (if (and  (= (:client-id client) (:client-id (:client code)))
                   (= (:redirect-uri code) ((req :params) :redirect_uri)))
-          (let [_ (auth-code-revoker code)
-                token (token-creator
-                       client (:subject code) (:scope code) (:object code))]
-            (token-response token))
+          (do
+            (auth-code-revoker code)
+            (respond-with-new-token (merge code {:token-creator token-creator :client client})))
           (error-response "invalid_grant"))
         (error-response "invalid_grant")))))
 
@@ -234,21 +246,22 @@
 
 (defmethod authorization-request-handler "token"
   [req {:keys [client-lookup token-lookup token-creator]}]
-  (let [params (req :params)
-        client (client-lookup (params :client_id))
-        token (mw/req->token req token-lookup)
-        user (:subject token)
-        token (token-creator client user)]
+  (let [session-token (mw/req->token req token-lookup)
+        token (token-creator
+               (merge {:client (client-lookup (:client_id (:params req)))
+                       :subject (:subject session-token)}
+                      (select-keys (:params req) [:state :scope])))]
     (authorization-response req {:access_token (:token token)
                                  :token_type "bearer"})))
 
 (defmethod authorization-request-handler "code"
   [req {:keys [client-lookup token-lookup auth-code-creator]}]
-  (let [params (req :params)
-        client (client-lookup (params :client_id))
-        token (mw/req->token req token-lookup)
-        user (:subject token)
-        code (auth-code-creator client user (:redirect_uri params))]
+  (let [session-token (mw/req->token req token-lookup)
+        code (auth-code-creator
+               (merge {:client (client-lookup (:client_id (:params req)))
+                       :subject (:subject session-token)}
+                      (select-keys (:params req) [:state :scope])
+                      {:redirect-uri (:redirect_uri (:params req))}))]
     (authorization-response req {:code (:code code)})))
 
 (defmethod authorization-request-handler :default [req]

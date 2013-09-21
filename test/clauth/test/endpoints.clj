@@ -35,14 +35,14 @@
   (client/reset-client-store!)
   (let [handler (base/token-handler)
         client (client/register-client)]
-    (is (= (handler {:params {:grant_type "client_credentials"
+    (let [response (handler { :params {:grant_type "client_credentials"
                               :client_id (:client-id client)
-                              :client_secret (:client-secret client)}})
-           {:status 200
-            :headers {"Content-Type" "application/json"}
-            :body (str "{\"access_token\":\"" (:token (first (tokens)))
-                       "\",\"token_type\":\"bearer\"}")})
-        "url form encoded client credentials")
+                              :client_secret (:client-secret client)}})]
+      (is (= { :status 200
+               :headers {"Content-Type" "application/json"}
+               :body (str "{\"access_token\":\"" (:token (first (tokens)))
+                          "\",\"token_type\":\"bearer\"}")}
+             response) "url form encoded client credentials"))
 
     (is (= (handler {:params { :grant_type "client_credentials" }
                      :headers {"authorization"
@@ -154,16 +154,17 @@
         scope "calendar"
         redirect_uri "http://test.com/redirect_uri"
         object {:id "stuff"}]
-    (let [code (create-auth-code client user redirect_uri scope object)]
-      (is (= (handler {:params {:grant_type "authorization_code"
+    (let [code (create-auth-code client user redirect_uri scope object)
+          response (handler {:params {:grant_type "authorization_code"
                                 :code (:code code)
                                 :redirect_uri redirect_uri
                                 :client_id (:client-id client)
-                                :client_secret (:client-secret client)}})
-             {:status 200
+                                :client_secret (:client-secret client)}})]
+      (is (= {:status 200
               :headers {"Content-Type" "application/json"}
               :body (str "{\"access_token\":\"" (:token (first (tokens)))
-                         "\",\"token_type\":\"bearer\"}")})
+                         "\",\"token_type\":\"bearer\"}")}
+             response)
           "url form encoded client credentials"))
 
     (let [code (create-auth-code client user redirect_uri "calendar" object)]
