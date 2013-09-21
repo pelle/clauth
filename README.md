@@ -21,8 +21,14 @@ The following bearer tokens are implemented:
 Add the following dependency to your `project.clj` file:
 
 ```clojure
-[clauth "1.0.0-rc10"]
+[clauth "1.0.0-rc14"]
 ```
+
+### Possible breaking change with 1.0.0-rc14
+
+The oauth models have been refactored to be simple maps instead of records. The factory functions are simpler and take a simple map of data.
+
+If you have your own token and authcode creator functions for versions prior to 1.0.0-rc14 please verify that they work when upgrading.
 
 ## Usage
 
@@ -68,7 +74,7 @@ There is a protocol defined called Expirable which implements one function:
 
 This is implementend by IPersistentMap so {} represents a valid token where {:expires (date-time 2011)} is invalid.
 
-A OAuthToken record exists which can be instantiated and stored easily by the create-token function:
+A OAuthToken map can be instantiated and stored easily by the create-token function:
 
 ```clojure
 (create-token client user)
@@ -76,7 +82,7 @@ A OAuthToken record exists which can be instantiated and stored easily by the cr
 
 ## Client Applications
 
-A ClientApplication record exists which can be instantiated and stored easily by the register-app function:
+A ClientApplication map can be instantiated and stored easily by the register-app function:
 
 ```clojure
 (register-app name url)
@@ -86,7 +92,7 @@ A client application has a client-id and a client-secret which is used for issui
 
 ## Users
 
-A User record exists which can be instantiated and stored easily by the register-user function:
+A User map exists which can be instantiated and stored easily by the register-user function:
 
 ```clojure
 (register-user login password name url)
