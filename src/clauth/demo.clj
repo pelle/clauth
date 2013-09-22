@@ -7,7 +7,7 @@
              [user :refer [user-store]]
              [auth-code :refer [auth-code-store]]]
             [clauth.store.redis
-             :refer [create-redis-store with-redis wrap-redis]]
+             :refer [create-redis-store]]
             [ring.adapter.jetty :refer [run-jetty]]
             [ring.middleware
              [cookies :refer [wrap-cookies]]
@@ -86,10 +86,9 @@
   (try
     (do
       (reset! token-store (create-redis-store "tokens"))
-      (reset! auth-code-store (create-redis-store "autho-codes"))
+      (reset! auth-code-store (create-redis-store "auth-codes"))
       (reset! client-store (create-redis-store "clients"))
       (reset! user-store (create-redis-store "users"))
-      (with-redis
         (let [client (or (first (clients))
                          (register-client "Clauth Demo"
                                           "http://pelle.github.com/clauth"))
@@ -113,8 +112,7 @@
                          (wrap-params)
                          (wrap-cookies)
                          (wrap-session)
-                         (wrap-redis)
-                         (wrap-bootstrap-resources)) {:port 3000}))))
+                         (wrap-bootstrap-resources)) {:port 3000})))
 
     (catch java.net.ConnectException e
       (println "You don't have a Redis database running in the background:"

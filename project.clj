@@ -13,7 +13,7 @@
   :profiles {:dev {
                    :dependencies [[ring/ring-jetty-adapter "1.1.0"]
                      [lein-marginalia "0.7.0"]
-                     [org.clojars.tavisrudd/redis-clojure "1.3.1"]
+                     [com.taoensso/carmine "2.2.0"]
                      [hiccup-bootstrap "0.1.0"]]}}
   :clean-non-project-classes true )
 
