@@ -39,8 +39,9 @@
    ([{:keys [token-creator params] :as attrs}]
       (let [params (or params {})]
         (token-response
-         (token-creator (merge (select-keys attrs [:client :subject])
-                               (select-keys params [:state :scope]))))))
+         (token-creator (merge
+                         (select-keys params [:scope])
+                         (select-keys attrs [:client :subject :scope]))))))
    
    ([client subject]
       (respond-with-new-token create-token client subject))
