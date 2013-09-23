@@ -106,7 +106,7 @@ There is a generalized protocol called Store and currently a simple memory imple
 
 It should be pretty simple to implement this Store with redis, sql, datomic or what have you.
 
-It includes a simple Redis implementation.
+It includes a simple Redis implementation based on Carmine.
 
 The stores used by the various parts are defined in an atom for each type. reset! each of them with your own implementation.
 
@@ -120,23 +120,16 @@ The following stores are currently defined:
 To use the redis store add the following to your code:
 
 ```clojure
-(reset! token-store (create-redis-store "tokens"))
-(reset! auth-code-store (create-redis-store "auth-codes"))
-(reset! client-store (create-redis-store "clients"))
-(reset! user-store (create-redis-store "users"))
-```
+(def server-conn
+  {:pool {}
+   :spec {:host "127.0.0.1"
+          :port 6379
+          :db 14}})
 
-And wrap your handler with a redis connection middleware similar to this:
-
-```clojure
-(defn wrap-redis-store [app]
-  (fn [req]
-    (redis/with-server
-     {:host "127.0.0.1"
-      :port 6379
-      :db 14
-     }
-     (app req))))
+(reset! token-store (create-redis-store "tokens" server-conn))
+(reset! auth-code-store (create-redis-store "auth-codes" server-conn))
+(reset! client-store (create-redis-store "clients" server-conn))
+(reset! user-store (create-redis-store "users" server-conn))
 ```
 
 ## Authorization OAuth Tokens
