@@ -249,7 +249,7 @@
   [req {:keys [client-lookup token-lookup token-creator]}]
   (let [session-token (mw/req->token req token-lookup)
         token (token-creator
-               (merge {:client (client-lookup (:client_id (:params req)))
+               (merge {:client (:client req)
                        :subject (:subject session-token)}
                       (select-keys (:params req) [:state :scope])))]
     (authorization-response req {:access_token (:token token)
@@ -259,7 +259,7 @@
   [req {:keys [client-lookup token-lookup auth-code-creator]}]
   (let [session-token (mw/req->token req token-lookup)
         code (auth-code-creator
-               (merge {:client (client-lookup (:client_id (:params req)))
+               (merge {:client (:client req)
                        :subject (:subject session-token)}
                       (select-keys (:params req) [:state :scope])
                       {:redirect-uri (:redirect_uri (:params req))}))]
@@ -281,7 +281,8 @@
    :token-creator a function that creates a new token when passed a client and
     a user
    :auth-code-creator a function that creates an authorization code record when
-    passed a client, user and redirect uri"
+    passed a client, user and redirect uri
+   :auto-approver a function for auto approving authorizations. By default no auto approval is provided. The auto approval functions is passed the request and decides based on your own business rules if the client should be authorized automatically for your user."
   ([]
      (authorization-handler {}))
   ([config]
@@ -289,17 +290,25 @@
                           :client-lookup clauth.client/fetch-client
                           :token-lookup clauth.token/find-valid-token
                           :token-creator clauth.token/create-token
-                          :auth-code-creator clauth.auth-code/create-auth-code}
+                          :auth-code-creator clauth.auth-code/create-auth-code
+                          :auto-approver (fn [_] false)}
                          config)
-           authorization-form (config :authorization-form)]       
+           authorization-form (config :authorization-form)
+           auto-approver (:auto-approver config)
+           client-lookup (:client-lookup config)]       
        (mw/require-user-session!
         (mw/csrf-protect!
          (fn [{:keys [params] :as req}]
            (if (and (params :response_type) (params :client_id))
-             (if (some (partial = (params :response_type)) ["code" "token"])
-               (if (= :get (req :request-method))
-                 (authorization-form req)
-                 (authorization-request-handler req config))
-               (authorization-error-response req "unsupported_response_type"))
+             (if-let [client (client-lookup (params :client_id))]
+               (let [req (assoc req :client client)]
+                 (if (some (partial = (params :response_type)) ["code" "token"])
+                   (if (= :get (req :request-method))
+                     (if (auto-approver req)
+                       (authorization-request-handler req config)
+                       (authorization-form req))
+                     (authorization-request-handler req config))
+                   (authorization-error-response req "unsupported_response_type")))
+               (authorization-error-response req "unauthorized_client"))
              (authorization-error-response req "invalid_request"))))
         (:token-lookup config)))))

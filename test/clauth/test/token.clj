@@ -20,13 +20,14 @@
     (is (= 1 (count (base/tokens))) "added one")
     (is (= record (first (base/tokens))) "added one")
     (is (= record (base/find-valid-token (:token record)))))
-
+  
+  (base/reset-token-store!)
   (let [record (base/create-token {:client "my-client"
                                    :subject "my-user"})]
     (is (= "my-client" (:client record)) "should have client")
     (is (= "my-user" (:subject record)) "should have subject")
     (is (not (nil? (:token record))) "should include token field")
-    (is (= 2 (count (base/tokens))) "added one")
+    (is (= 1 (count (base/tokens))) "added one")
     (is (= record (first (base/tokens))) "added one")
     (is (= record (base/find-valid-token (:token record))))))
 
@@ -49,3 +50,23 @@
     (do (base/revoke-token record)
         (is (= nil (base/fetch-token (:token record))))
         (is (= 0 (count (base/tokens))) "revoked one"))))
+
+(deftest find-matching-tokens-in-store
+  (base/reset-token-store!)
+  (is (empty? (base/find-tokens-for
+               {:client "my-client"
+                :subject "my-user"})))
+  (let [record (base/create-token {:client "my-client"
+                                   :subject "my-user"})]
+    (is (= [record]
+           (base/find-tokens-for
+                 {:client "my-client"
+                  :subject "my-user"})))
+    (is (empty? (base/find-tokens-for
+               {:client "my-client"
+                :subject "other-user"})))
+    (is (empty? (base/find-tokens-for
+               {:client "other-client"
+                :subject "my-user"}))))
+
+  )

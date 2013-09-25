@@ -295,6 +295,27 @@
       (is (= (session :return-to)
              (str uri "?" query-string)))
       (is (= (response :headers) {"Location" "/login"})))
+
+    ;; Auto approve
+    (let [handler (base/authorization-handler {:auto-approver (fn [_] true)})
+          session_token (create-token client user)
+          response (handler {:request-method :get
+                             :params params
+                             :uri uri
+                             :query-string query-string
+                             :session {:access_token (:token session_token)}})
+          post_auth_redirect_uri ((response :headers) "Location")
+          code_string (last (re-find #"code=([^&]+)" post_auth_redirect_uri))
+          auth-code (fetch-auth-code code_string)]
+      (is (= (response :status) 302))
+      (is (= post_auth_redirect_uri
+             (str "http://test.com?state=abcde&code=" code_string))
+          "should redirect with proper format")
+      (is (= (:client auth-code) client) "should properly set client")
+      (is (= (:subject auth-code) user) "should properly set subject")
+      (is (= (:redirect-uri auth-code) redirect_uri)
+          "should properly save redirect_uri"))
+    
     ;; Missing parameters
     (let [session_token (create-token client user)
           response (handler {:request-method :get

@@ -91,3 +91,8 @@
   [t]
   (if-let [token (fetch-token t)]
     (if (is-valid? token) token)))
+
+(defn find-tokens-for
+  "return tokens matching a given criteria"
+  [criteria]
+  (filter #(= criteria (select-keys % (keys criteria))) (tokens)))
