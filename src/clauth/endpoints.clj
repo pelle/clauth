@@ -114,10 +114,10 @@
         (error-response "invalid_grant")))))
 
  (defmethod token-request-handler "password"
-   [req {:keys [client-authenticator token-creator user-authenticator]}]
+   [req {:keys [client-authenticator token-creator user-authenticator implicit-client]}]
    (client-authenticated-request
     req
-    client-authenticator
+    (or implicit-client client-authenticator)
     (fn [req client] (if-let [user (user-authenticator
                                     ((req :params) :username)
                                     ((req :params) :password))]

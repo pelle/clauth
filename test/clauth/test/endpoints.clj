@@ -143,6 +143,38 @@
             :body "{\"error\":\"invalid_client\"}"})
         "should fail with missing client authentication")))
 
+(deftest requesting-resource-owner-password-credentials-token-with-implicit-client
+  (reset-token-store!)
+  (client/reset-client-store!)
+  (user/reset-user-store!)
+  (let [handler (base/token-handler {:implicit-client client/implicit-client})
+        client (client/register-client)
+        user (user/register-user "john@example.com" "password")]
+    (is (= (handler {:params {:grant_type "password"
+                              :username "john@example.com"
+                              :password "password"
+                              :client_id (:client-id client)}})
+           {:status 200
+            :headers {"Content-Type" "application/json"}
+            :body (str "{\"access_token\":\"" (:token (first (tokens)))
+                       "\",\"token_type\":\"bearer\"}")})
+        "url form encoded client credentials")
+    (is (= (handler {:params {:grant_type "password"
+                              :client_id (:client-id client)}})
+           {:status 400
+            :headers {"Content-Type" "application/json"}
+            :body "{\"error\":\"invalid_grant\"}"})
+        "should fail with missing user authentication")
+
+    (is (= (handler {:params {:grant_type "password"
+                              :username "john@example.com"
+                              :password "password"
+                              :client_id  "bad"}})
+           {:status 400
+            :headers {"Content-Type" "application/json"}
+            :body "{\"error\":\"invalid_client\"}"})
+        "should fail on bad client_id")))
+
 (deftest requesting-authorization-code-token
   (reset-token-store!)
   (reset-auth-code-store!)
