@@ -1,4 +1,4 @@
-(defproject clauth "1.0.0-rc15"
+(defproject clauth "1.0.0-rc17"
   :description "OAuth2 based authentication library for Ring"
   :url "http://github.com/pelle/clauth"
   :dependencies [[org.clojure/clojure "1.5.1"]
