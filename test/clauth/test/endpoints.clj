@@ -315,7 +315,7 @@
       (is (= (:subject auth-code) user) "should properly set subject")
       (is (= (:redirect-uri auth-code) redirect_uri)
           "should properly save redirect_uri"))
-    
+
     ;; Missing parameters
     (let [session_token (create-token client user)
           response (handler {:request-method :get
@@ -359,6 +359,19 @@
       (is (= (response :headers)
              {"Location"
               "http://test.com?state=abcde&error=unsupported_response_type"})
+          "should return error on unsupported response type"))
+
+      (let [session_token (create-token client user)
+            handler (base/authorization-handler {:allowed-response-types ["code"]})
+          response (handler {:request-method :get
+                             :params (assoc params :response_type "token")
+                             :uri uri
+                             :query-string query-string
+                             :session {:access_token (:token session_token)}})]
+      (is (= (response :status) 302))
+      (is (= (response :headers)
+             {"Location"
+              "http://test.com#state=abcde&error=unsupported_response_type"})
           "should return error on unsupported response type"))
 
     (let [session_token (create-token client user)

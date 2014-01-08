@@ -64,6 +64,19 @@ We currently support the following authorization requests:
 * [Authorization Code Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.1)
 * [Implicit Grant](http://tools.ietf.org/html/draft-ietf-oauth-v2-25#section-4.2)
 
+You can control the ones you wish to support by using the configuration parameter :allowed-response-types to the authorization-handler
+
+```clojure
+(authorization-handler {:allowed-response-types ["code"]}) ;; Only support Authorization Code Grants
+```
+
+Implement custom authorization requests:
+
+```clojure
+(defmethod authorization-request-handler "custom"
+  ... )
+```
+
 ## Tokens
 
 There is a protocol defined called Expirable which implements one function:

@@ -42,10 +42,10 @@
          (token-creator (merge
                          (select-keys params [:scope])
                          (select-keys attrs [:client :subject :scope]))))))
-   
+
    ([client subject]
       (respond-with-new-token create-token client subject))
-   
+
    ([token-creator client subject]
       (respond-with-new-token {:client client
                                :subject subject
@@ -282,6 +282,7 @@
     a user
    :auth-code-creator a function that creates an authorization code record when
     passed a client, user and redirect uri
+   :allowed-response-types Defaults to code and token. You can add custome ones here or remove less secure ones such as 'token'
    :auto-approver a function for auto approving authorizations. By default no auto approval is provided. The auto approval functions is passed the request and decides based on your own business rules if the client should be authorized automatically for your user."
   ([]
      (authorization-handler {}))
@@ -291,18 +292,19 @@
                           :token-lookup clauth.token/find-valid-token
                           :token-creator clauth.token/create-token
                           :auth-code-creator clauth.auth-code/create-auth-code
+                          :allowed-response-types ["code" "token"]
                           :auto-approver (fn [_] false)}
                          config)
            authorization-form (config :authorization-form)
            auto-approver (:auto-approver config)
-           client-lookup (:client-lookup config)]       
+           client-lookup (:client-lookup config)]
        (mw/require-user-session!
         (mw/csrf-protect!
          (fn [{:keys [params] :as req}]
            (if (and (params :response_type) (params :client_id))
              (if-let [client (client-lookup (params :client_id))]
                (let [req (assoc req :client client)]
-                 (if (some (partial = (params :response_type)) ["code" "token"])
+                 (if (some (partial = (params :response_type)) (:allowed-response-types config))
                    (if (= :get (req :request-method))
                      (if (auto-approver req)
                        (authorization-request-handler req config)
