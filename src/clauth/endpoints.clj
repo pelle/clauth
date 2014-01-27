@@ -160,7 +160,7 @@
 
 
 (defn return-to-handler
-  "Return to value of :return-to key session or the contents of defaukt-destination (by default '/')"
+  "Return to value of :return-to key session or the contents of default-destination (by default '/')"
   ([req]
     (return-to-handler req "/"))
 
