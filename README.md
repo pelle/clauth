@@ -187,6 +187,17 @@ Token handler comes with defaults that use the various built in token, user etc.
                 :auth-code-lookup clauth.auth-code/fetch-auth-code })
 ```
 
+### Browser-based and mobile apps
+
+As described in [OAuth 2 Simplified](http://aaronparecki.com/articles/2012/07/29/1/oauth2-simplified),
+apps running in a browser or on a mobile device cannot maintain the confidentiality of the client
+secret, so you can allow these apps to skip client authentication when using a grant type of
+password by passing `:implicit-client` to `token-handler` as follows:
+
+```clojure
+(token-handler {:implicit-client clauth.client/implicit-client})
+```
+
 ## Using as primary user authentication on server
 
 One of the ideas of this is using OAuth tokens together with traditional sessions based authentication providing the benefits of both. To do this we create a new token when a user logs in and adds it to the session.

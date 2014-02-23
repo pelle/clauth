@@ -48,3 +48,9 @@
   (if-let [client (fetch-client client-id)]
     (if (= client-secret (:client-secret client))
       client)))
+
+(defn implicit-client
+  "Fetch a client without authenticating using the client-secret. This is used for implicit
+  authorization."
+  [client-id client-secret]
+  (fetch-client client-id))
