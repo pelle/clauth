@@ -52,7 +52,7 @@
                  [:div {:class "form-actions"}
                   [:button {:type "submit" :class "btn btn-primary"}
                    "Authorize"]
-                  [:a {:class "btn" :href (or ((req :params) "redirect_uri")
+                  [:a {:class "btn" :href (or ((req :params) :redirect_uri)
                                               "/")} "Cancel"]])))))
 
 (defn authorization-form-handler
