@@ -46,9 +46,7 @@
   "create a unique user and store it in the user store"
   ([attrs]
      (store-user (new-user attrs)))
-  ([login password] (register-user login password nil nil))
-  ([login password name url]
-     (register-user (new-user login password name url))))
+  ([login password & [name url]] (register-user (new-user login password name url))))
 
 (defn authenticate-user
   "authenticate user application using login and password"
