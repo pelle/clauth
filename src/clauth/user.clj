@@ -17,8 +17,10 @@
 
 (defn new-user
   "Create new user record"
-  [login password & [name url]]
-  {:login login :password (bcrypt password) :name name :url url})
+  ([attrs]
+     attrs)
+  ([login password & [name url]]
+     {:login login :password (bcrypt password) :name name :url url}))
 
 (defn reset-user-store!
   "mainly for used in testing. Clears out all users."
