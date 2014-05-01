@@ -17,15 +17,10 @@
 
 (defn new-user
   "Create new user record"
-  ([attrs] ; Swiss army constructor. There must be a better way.
-     (if attrs
-       (if (:encrypt-password attrs)
-         (assoc (dissoc attrs :encrypt-password)
-           :password (bcrypt (:encrypt-password attrs)))
-         attrs)))
-  
-  ([login password] (new-user login password nil nil))
-  ([login password name url] (new-user { :login login :encrypt-password password :name name :url url})))
+  ([attrs]
+     attrs)
+  ([login password & [name url]]
+     {:login login :password (bcrypt password) :name name :url url}))
 
 (defn reset-user-store!
   "mainly for used in testing. Clears out all users."
@@ -51,9 +46,7 @@
   "create a unique user and store it in the user store"
   ([attrs]
      (store-user (new-user attrs)))
-  ([login password] (register-user login password nil nil))
-  ([login password name url]
-     (register-user (new-user login password name url))))
+  ([login password & [name url]] (register-user (new-user login password name url))))
 
 (defn authenticate-user
   "authenticate user application using login and password"
