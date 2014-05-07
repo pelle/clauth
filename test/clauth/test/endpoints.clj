@@ -19,6 +19,17 @@
           :headers {"Content-Type" "application/json"}
           :body "{\"access_token\":\"SECRET\",\"token_type\":\"bearer\"}"})))
 
+(deftest token-custom-decorator
+  (is (= (base/token-response {:token "SECRET" :unimportant "forget this"}
+                              (fn [token]
+                                (when token
+                                  {:access_token (:token token)
+                                   :token_type "bearer"
+                                   :id_token "BOOM!"})))
+         {:status 200
+          :headers {"Content-Type" "application/json"}
+          :body "{\"access_token\":\"SECRET\",\"token_type\":\"bearer\",\"id_token\":\"BOOM!\"}"})))
+
 (deftest ring-error-response
   (is (= (base/error-response :invalid_request)
          {:status 400
