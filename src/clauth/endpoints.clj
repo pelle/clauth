@@ -21,10 +21,10 @@
 
  (defn token-response
    "Create a ring response for a token response"
-   [token]
+   [token & [token-decorator]]
    {:status 200
     :headers {"Content-Type" "application/json"}
-    :body (cheshire/generate-string (decorate-token token))})
+    :body (cheshire/generate-string ((or token-decorator decorate-token) token))})
 
  (defn error-response
    "Create a ring response for a oauth error"
@@ -36,12 +36,13 @@
  (defn respond-with-new-token
    "create a new token and respond with json. If using built in token system it takes client and subject (user).
     You can also pass a function to it and the client and subject."
-   ([{:keys [token-creator params] :as attrs}]
+   ([{:keys [token-creator params token-decorator] :as attrs}]
       (let [params (or params {})]
         (token-response
          (token-creator (merge
                          (select-keys params [:scope])
-                         (select-keys attrs [:client :subject :scope]))))))
+                         (select-keys attrs [:client :subject :scope])))
+         token-decorator)))
 
    ([client subject]
       (respond-with-new-token create-token client subject))
@@ -88,18 +89,20 @@
  (defmulti token-request-handler grant-type)
 
  (defmethod token-request-handler "client_credentials"
-   [req {:keys [client-authenticator token-creator]}]
+   [req {:keys [client-authenticator token-creator token-decorator]}]
    (client-authenticated-request
     req
     client-authenticator
     (fn [req client] (respond-with-new-token {:token-creator token-creator
-                                             :client client
-                                             :subject client
-                                             :params (:params req)}))))
+                                              :token-decorator token-decorator
+                                              :client client
+                                              :subject client
+                                              :params (:params req)}))))
 
  (defmethod token-request-handler "authorization_code"
    [req {:keys [client-authenticator token-creator
-                auth-code-lookup auth-code-revoker]}]
+                auth-code-lookup auth-code-revoker
+                token-decorator]}]
    (client-authenticated-request
     req
     client-authenticator
@@ -109,7 +112,9 @@
                   (= (:redirect-uri code) ((req :params) :redirect_uri)))
           (do
             (auth-code-revoker code)
-            (respond-with-new-token (merge code {:token-creator token-creator :client client})))
+            (respond-with-new-token (merge code {:token-creator token-creator
+                                                 :client client
+                                                 :token-decorator token-decorator})))
           (error-response "invalid_grant"))
         (error-response "invalid_grant")))))
 
