@@ -183,9 +183,9 @@
 
 (defn user-session-required-response
   "Return HTTP 403 Response or redirects to login"
-  [req]
+  [req user-session-required-redirect]
   (if-html req
-           (-> (redirect "/login")
+           (-> (redirect user-session-required-redirect)
                (assoc-session req :return-to (requested-uri req)))
            {:status 403
             :headers {"Content-Type" "text/plain"}
@@ -204,11 +204,11 @@
 
    Will redirect user to login url if not authenticated and issue a 403 to
    other requests."
-  ([app]
-     (require-user-session! app token/find-valid-token))
-  ([app find-token]
+  ([app user-session-required-redirect]
+     (require-user-session! app token/find-valid-token user-session-required-redirect))
+  ([app find-token user-session-required-redirect]
      (wrap-user-session
       (fn [req]
         (if (req :access-token)
           (app req)
-          (user-session-required-response req))) find-token)))
+          (user-session-required-response req user-session-required-redirect))) find-token)))

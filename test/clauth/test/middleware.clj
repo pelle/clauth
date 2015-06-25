@@ -123,11 +123,11 @@
 (deftest require-user-session
   (is (= 200 (:status
               ((base/require-user-session!
-                (fn [req] {:status 200}) #{"secrettoken"})
+                (fn [req] {:status 200}) #{"secrettoken"} "/login")
                {:session {:access_token "secrettoken"}}))) "allow from session")
 
   (let [response ((base/require-user-session!
-                   (fn [req] {:status 200}) #{"secrettoken"})
+                   (fn [req] {:status 200}) #{"secrettoken"} "/login")
                   {:headers {"accept" "text/html"}
                    :query-string "test=123"
                    :uri "/protected"})]
@@ -136,19 +136,26 @@
     (is (= "/protected?test=123" ((:session response) :return-to))
         "set return-to"))
 
+  (let [response ((base/require-user-session!
+                    (fn [req] {:status 200}) #{"secrettoken"} "/different-login-page")
+                   {:headers {"accept" "text/html"}
+                    :query-string "test=123"
+                    :uri "/protected"})]
+    (is (= "/different-login-page" ((:headers response) "Location")) "login url is configurable"))
+
   (is (= 403 (:status
               ((base/require-user-session!
-                (fn [req] {:status 200}) #{"secrettoken"})
+                (fn [req] {:status 200}) #{"secrettoken"} "/login")
                {:headers {"authorization" "Bearer secrettoken"}})))
       "Disallow from auth header")
   (is (= 403 (:status
               ((base/require-user-session!
-                (fn [req] {:status 200}) #{"secrettoken"})
+                (fn [req] {:status 200}) #{"secrettoken"} "/login")
                {:cookies {"access_token" {:value "secrettoken"}}})))
       "Disallow from cookies")
   (is (= 403 (:status
               ((base/require-user-session!
-                (fn [req] {:status 200}) #{"secrettoken"})
+                (fn [req] {:status 200}) #{"secrettoken"} "/login")
                {:params {:access_token "secrettoken"}})))
       "Disallow from params"))
 

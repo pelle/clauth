@@ -287,7 +287,8 @@
   ([]
      (authorization-handler {}))
   ([config]
-     (let [config (merge {:authorization-form views/authorization-form-handler
+     (let [config (merge {:user-session-required-redirect "/login"
+                          :authorization-form views/authorization-form-handler
                           :client-lookup clauth.client/fetch-client
                           :token-lookup clauth.token/find-valid-token
                           :token-creator clauth.token/create-token
@@ -313,4 +314,5 @@
                    (authorization-error-response req "unsupported_response_type")))
                (authorization-error-response req "unauthorized_client"))
              (authorization-error-response req "invalid_request"))))
-        (:token-lookup config)))))
+        (:token-lookup config)
+        (:user-session-required-redirect config)))))
