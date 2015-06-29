@@ -1,4 +1,4 @@
-(defproject clauth "1.0.0-rc17"
+(defproject johncowie/clauth "1.0.1"
   :description "OAuth2 based authentication library for Ring"
   :url "http://github.com/pelle/clauth"
   :dependencies [[org.clojure/clojure "1.5.1"]
@@ -15,5 +15,7 @@
                      [lein-marginalia "0.7.0"]
                      [com.taoensso/carmine "2.2.0"]
                      [hiccup-bootstrap "0.1.0"]]}}
-  :clean-non-project-classes true )
+  :clean-non-project-classes true 
+  :scm {:name "git"
+	:url "https://github.com/johncowie/clauth"})
 
