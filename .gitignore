@@ -10,3 +10,6 @@
 /target
 
 .lein-repl-history
+.idea
+*.iml
+*pom.xml.asc
