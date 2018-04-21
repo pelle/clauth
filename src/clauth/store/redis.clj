@@ -7,12 +7,17 @@
                          (get (System/getenv) "REDISTOGO_URL"))]
     (let [uri (new java.net.URI redis_url)
           host (.getHost uri)
-          port (.getPort uri)
-          password (last (clojure.string/split (.getUserInfo uri) #":"))]
-      {:pool {} 
-       :spec {:host host
-               :port port
-               :password password}})
+          port (.getPort uri)]
+      ;; auth is optional
+      (if-let [user-info (.getUserInfo uri)]
+        (let [password (last (clojure.string/split user-info #":"))]
+          {:pool {} 
+           :spec {:host host
+                   :port port
+                   :password password}})
+        {:pool {} 
+         :spec {:host host
+                 :port port}}))
     {:pool {}
      :spec {:host "127.0.0.1"
             :port 6379
